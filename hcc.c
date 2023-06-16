@@ -1,4 +1,4 @@
-#include "hcc-temp.h"
+#include "hcc.h"
 
 module_param(target_pid, int, 0);
 MODULE_PARM_DESC(target_pid, "Target process ID");
@@ -145,7 +145,7 @@ void poll_iio_exit(void) {
 
 static void thread_fun_poll_iio(struct work_struct *work) {
   int cpu = CORE_IIO;
-  uint32_t budget = 10000000;
+  uint32_t budget = WORKER_BUDGET;
   while (budget) {
     sample_counters_iio(cpu); //sample counters
     update_iio_occ();         //update occupancy value
@@ -348,7 +348,7 @@ void poll_mba_exit(void) {
 
 static void thread_fun_poll_mba(struct work_struct *work) {  
   int cpu = NUMA0_CORE;
-  uint32_t budget = 10000000;
+  uint32_t budget = WORKER_BUDGET;
   while (budget) {
     sample_counters_pcie_bw(cpu);
     update_pcie_bw();
