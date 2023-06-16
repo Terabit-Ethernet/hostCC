@@ -1,14 +1,27 @@
-#include "hcc.h"
+#include "hcc-temp.h"
 
 module_param(target_pid, int, 0);
 MODULE_PARM_DESC(target_pid, "Target process ID");
 MODULE_LICENSE("GPL");
 
+static inline __attribute__((always_inline)) unsigned long rdtscp(void)
+{
+   unsigned long a, d, c;
+
+   __asm__ volatile("rdtscp" : "=a" (a), "=d" (d), "=c" (c));
+
+   return (a | (d << 32));
+}
+
+static bool terminate_hcc = false;
+static struct workqueue_struct *poll_iio_queue, *poll_mba_queue;
+static struct work_struct poll_iio, poll_mba;
+
 //Netfilter logic to mark ECN bits
 static void sample_counters_nf(int c){
   latest_measured_avg_occ_nf = smoothed_avg_occ;
 
-	tsc_sample_nf = rdtsc();
+	tsc_sample_nf = rdtscp();
 	prev_rdtsc_nf = cur_rdtsc_nf;
 	cur_rdtsc_nf = tsc_sample_nf;
 
@@ -90,7 +103,7 @@ static void sample_iio_occ_counter(int c){
 }
 
 static void sample_iio_time_counter(void){
-  tsc_sample_iio = rdtsc();
+  tsc_sample_iio = rdtscp();
 	prev_rdtsc_iio = cur_rdtsc_iio;
 	cur_rdtsc_iio = tsc_sample_iio;
 }
@@ -116,35 +129,35 @@ static void update_iio_occ(void){
 
 void poll_iio_init(void) {
     //initialize the log
+    printk(KERN_INFO "Starting IIO Sampling");
     init_iio_log();
     update_iio_occ_ctl_reg();
 }
 
 void poll_iio_exit(void) {
     //dump log info
+    printk(KERN_INFO "Ending IIO Sampling");
+    flush_workqueue(poll_iio_queue);
+    flush_scheduled_work();
+    destroy_workqueue(poll_iio_queue);
     dump_iio_log();
 }
 
-static int thread_fun_poll_iio(void *arg) {
-  allow_signal(SIGKILL);
+static void thread_fun_poll_iio(struct work_struct *work) {
   int cpu = CORE_IIO;
-  poll_iio_init();
-
-  printk(KERN_INFO "Starting IIO Sampling");
-  while (!kthread_should_stop()) {
-
+  uint32_t budget = 10000000;
+  while (budget) {
     sample_counters_iio(cpu); //sample counters
     update_iio_occ();         //update occupancy value
     update_log_iio(cpu);      //update the log
-
-    if(signal_pending(thread_iio)){
-		  break;
-    }
+    budget--;
   }
-  printk(KERN_INFO "Ending IIO Sampling");
-  poll_iio_exit();
-  do_exit(0);
-  return 0;
+  if(!terminate_hcc){
+    queue_work_on(cpu,poll_iio_queue, &poll_iio);
+  }
+  else{
+    return;
+  }
 }
 
 // PCIe bandwidth sampling and MBA update logic
@@ -160,7 +173,7 @@ static void sample_pcie_bw_counter(int c){
 }
 
 static void sample_mba_time_counter(void){
-  tsc_sample_mba = rdtsc();
+  tsc_sample_mba = rdtscp();
 	prev_rdtsc_mba = cur_rdtsc_mba;
 	cur_rdtsc_mba = tsc_sample_mba;
 }
@@ -245,7 +258,7 @@ static void increase_mba_val(void){
 }
 
 static void decrease_mba_val(void){
-    uint64_t cur_tsc_val = rdtsc();
+    uint64_t cur_tsc_val = rdtscp();
     if((cur_tsc_val - last_reduced_tsc) / 3300 < REDUCTION_TIMEOUT_US){
         return;
     }
@@ -266,15 +279,15 @@ static void decrease_mba_val(void){
         switch(latest_mba_val){
             case 0:
                 wrmsr_on_cpu(NUMA1_CORE,msr_num,low,high);
-                last_reduced_tsc = rdtsc();
+                last_reduced_tsc = rdtscp();
                 break;
             case 1:
                 wrmsr_on_cpu(NUMA2_CORE,msr_num,low,high);
-                last_reduced_tsc = rdtsc();
+                last_reduced_tsc = rdtscp();
                 break;
             case 2:
                 wrmsr_on_cpu(NUMA3_CORE,msr_num,low,high);
-                last_reduced_tsc = rdtsc();
+                last_reduced_tsc = rdtscp();
                 break;
             case 3:
                 #if !(USE_PROCESS_SCHEDULER)
@@ -282,7 +295,7 @@ static void decrease_mba_val(void){
                 #endif
                 #if USE_PROCESS_SCHEDULER
                 update_mba_process_scheduler();
-                last_reduced_tsc = rdtsc();
+                last_reduced_tsc = rdtscp();
                 #endif
                 break;
             default:
@@ -307,13 +320,21 @@ static void update_mba_val(void){
 }
 
 void poll_mba_init(void) {
+    #if USE_PROCESS_SCHEDULER
+    app_pid = target_pid;
+    printk("MLC PID: %ld\n",app_pid);
+    #endif
     //initialize the log
+    printk(KERN_INFO "Starting PCIe Bandwidth Sampling");
     init_mba_log();
 }
 
 void poll_mba_exit(void) {
     //dump log info
-    dump_mba_log();
+    printk(KERN_INFO "Ending PCIe Bandwidth Sampling");
+    flush_workqueue(poll_mba_queue);
+    flush_scheduled_work();
+    destroy_workqueue(poll_mba_queue);
     if(latest_mba_val > 0){
         latest_mba_val = 0;
         update_mba_msr_register();
@@ -321,66 +342,52 @@ void poll_mba_exit(void) {
         update_mba_process_scheduler();
         #endif
     }
+    dump_mba_log();
 }
 
 
-static int thread_fun_poll_mba(void *arg) {
-  allow_signal(SIGKILL);
-
-  #if USE_PROCESS_SCHEDULER
-  app_pid = target_pid;
-  printk("MLC PID: %ld\n",app_pid);
-  #endif
-  
+static void thread_fun_poll_mba(struct work_struct *work) {  
   int cpu = NUMA0_CORE;
-  poll_mba_init();
-  printk(KERN_INFO "Starting PCIe Bandwidth Sampling");
-  while (!kthread_should_stop()) {
-   
+  uint32_t budget = 10000000;
+  while (budget) {
     sample_counters_pcie_bw(cpu);
     update_pcie_bw();
     latest_measured_avg_occ = smoothed_avg_occ; //to reflect a consistent IIO occupancy value in log and MBA update logic
     update_mba_val();
     update_log_mba(cpu);
-
-    if(signal_pending(thread_mba)){
-		  break;
-    }
+    budget--;
   }
-  printk(KERN_INFO "Ending PCIe Bandwidth Sampling");
-  poll_mba_exit();
-  do_exit(0);
-  return 0;
+  if(!terminate_hcc){
+    queue_work_on(cpu,poll_mba_queue, &poll_mba);
+  }
+  else{
+    return;
+  }
+  
 }
 
+
+
 static int __init hcc_init(void) {
-  struct sched_param task_sched_params_iio;
-  struct sched_param task_sched_params_mba;
-  task_sched_params_iio.sched_priority = MAX_RT_PRIO;
-  task_sched_params_iio.sched_policy = SCHED_FIFO;
-  task_sched_params_mba.sched_priority = MAX_RT_PRIO;
-  task_sched_params_mba.sched_policy = SCHED_FIFO;
-
-  /* Create threads. */
-  thread_iio = kthread_create(thread_fun_poll_iio, NULL, "poll_iio");
-  if(thread_iio == NULL) {
-    return -ENOMEM;
+  //Start IIO occupancy sampling
+  poll_iio_queue = alloc_workqueue("poll_iio_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
+  if (!poll_iio_queue) {
+      printk(KERN_ERR "Failed to create IIO workqueue\n");
+      return -ENOMEM;
   }
-  thread_mba = kthread_create(thread_fun_poll_mba, NULL, "poll_mba");
-  if(thread_mba == NULL) {
-    return -ENOMEM;
-  }  
+  INIT_WORK(&poll_iio, thread_fun_poll_iio);
+  poll_iio_init();
+  queue_work_on(CORE_IIO,poll_iio_queue, &poll_iio);
 
-  /* Set the thread's affinity to a dedicated core. */
-  // IIO occupancy sampling thread
-  kthread_bind(thread_iio, CORE_IIO);
-  sched_setscheduler_nocheck(thread_iio, SCHED_FIFO, &task_sched_params_iio);
-  wake_up_process(thread_iio);
-
-  // PCIe bandwidth sampling MBA update thread
-  kthread_bind(thread_mba, NUMA0_CORE); //assuming the NIC is attached to NUMA0
-  sched_setscheduler_nocheck(thread_mba, SCHED_FIFO, &task_sched_params_mba);
-  wake_up_process(thread_mba);
+  //Start MBA allocation
+  poll_mba_queue = alloc_workqueue("poll_mba_queue", WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
+  if (!poll_mba_queue) {
+      printk(KERN_ERR "Failed to create MBA workqueue\n");
+      return -ENOMEM;
+  }
+  INIT_WORK(&poll_mba, thread_fun_poll_mba);
+  poll_mba_init();
+  queue_work_on(NUMA0_CORE,poll_mba_queue, &poll_mba);
 
   //Start ECN marking
   nf_init();
@@ -389,9 +396,10 @@ static int __init hcc_init(void) {
 }
 
 static void __exit hcc_exit(void) {
+  terminate_hcc = true;
   nf_exit();
-  kthread_stop(thread_mba);
-  kthread_stop(thread_iio);
+  poll_iio_exit();
+  poll_mba_exit();
 }
 
 module_init(hcc_init);

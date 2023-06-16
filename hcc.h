@@ -20,8 +20,8 @@ static struct nf_hook_ops *nf_markecn_ops = NULL;
 DEFINE_SPINLOCK(etx_spinlock);
 
 // kthread scheduling vars
-static int thread_fun_poll_iio(void *arg);
-static int thread_fun_poll_mba(void *arg);
+static void thread_fun_poll_iio(struct work_struct *work);
+static void thread_fun_poll_mba(struct work_struct* work);
 
 static struct task_struct *thread_iio;
 static struct task_struct *thread_mba;
