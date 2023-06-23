@@ -21,9 +21,11 @@ DEFINE_SPINLOCK(etx_spinlock);
 
 // kthread scheduling vars
 static void thread_fun_poll_iio(struct work_struct *work);
+static void thread_fun_poll_iio_rd(struct work_struct *work);
 static void thread_fun_poll_mba(struct work_struct* work);
 
 static struct task_struct *thread_iio;
+static struct task_struct *thread_iio_rd;
 static struct task_struct *thread_mba;
 
 static struct sched_param {
@@ -32,6 +34,14 @@ static struct sched_param {
 };
 
 // logging vars
+struct log_entry_iio_rd{
+	uint64_t l_tsc; //latest TSC
+	uint64_t td_ns; //latest measured time delta in us
+	uint64_t avg_occ_rd; //latest measured avg IIO occupancy
+	uint64_t s_avg_occ_rd; //latest calculated smoothed occupancy
+	int cpu; //current cpu
+};
+
 struct log_entry_iio{
 	uint64_t l_tsc; //latest TSC
 	uint64_t td_ns; //latest measured time delta in us
@@ -58,13 +68,39 @@ struct log_entry_nf{
 	uint32_t dat_len; //IP datagram length at last sample
 };
 
-#define LOG_SIZE 100
+#define LOG_SIZE 1000
 struct log_entry_iio LOG_IIO[LOG_SIZE];
+struct log_entry_iio_rd LOG_IIO_RD[LOG_SIZE];
 struct log_entry_mba LOG_MBA[LOG_SIZE];
 struct log_entry_nf LOG_NF[LOG_SIZE];
 uint32_t log_index_iio = 0;
+uint32_t log_index_iio_rd = 0;
 uint32_t log_index_mba = 0;
 uint32_t log_index_nf = 0;
+
+// IIO Rd occupancy related vars
+#define CHA_EVENT 0x00403436
+#define CHA_FILTER0 0x00000000
+#define CHA_FILTER1 0x00043c33
+
+#define CHA_MSR_PMON_BASE 0x0E00L
+#define CHA_MSR_PMON_CTL_BASE 0x0E01L
+#define CHA_MSR_PMON_FILTER0_BASE 0x0E05L
+#define CHA_MSR_PMON_FILTER1_BASE 0x0E06L
+#define CHA_MSR_PMON_STATUS_BASE 0x0E07L
+#define CHA_MSR_PMON_CTR_BASE 0x0E08L
+#define CORE_IIO_RD 20
+
+#define NUM_CHA_BOXES 18
+uint64_t cum_occ_sample_rd;
+uint64_t prev_cum_occ_rd;
+uint64_t cur_cum_occ_rd;
+uint64_t prev_rdtsc_iio_rd = 0;
+uint64_t cur_rdtsc_iio_rd = 0;
+uint64_t tsc_sample_iio_rd = 0;
+uint64_t latest_avg_occ_rd = 0;
+uint64_t smoothed_avg_occ_rd = 0;
+uint64_t latest_time_delta_iio_rd_ns = 0;
 
 // IIO occupancy related vars
 #define IRP_MSR_PMON_CTL_BASE 0x0A5BL
@@ -193,6 +229,42 @@ static void dump_nf_log(void) {
     LOG_NF[i].cpu,
     LOG_NF[i].dat_len);
     i++;
+  }
+}
+
+static void update_log_iio_rd(int c){
+	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].l_tsc = cur_rdtsc_iio_rd;
+	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].td_ns = latest_time_delta_iio_rd_ns;
+	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].avg_occ_rd = latest_avg_occ_rd;
+	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].s_avg_occ_rd = smoothed_avg_occ_rd;
+	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].cpu = c;
+	log_index_iio_rd++;
+}
+
+static void init_iio_rd_log(void){
+  int i=0;
+  while(i<LOG_SIZE){
+      LOG_IIO_RD[i].l_tsc = 0;
+      LOG_IIO_RD[i].td_ns = 0;
+      LOG_IIO_RD[i].avg_occ_rd = 0;
+      LOG_IIO_RD[i].s_avg_occ_rd = 0;
+      LOG_IIO_RD[i].cpu = 65;
+      i++;
+  }
+}
+
+static void dump_iio_rd_log(void){
+  int i=0;
+  // printk("index,latest_tsc,time_delta_ns,avg_occ,s_avg_occ,cpu\n");
+  while(i<LOG_SIZE){
+      printk("IIORD:%d,%lld,%lld,%lld,%lld,%d\n",
+      i,
+      LOG_IIO_RD[i].l_tsc,
+      LOG_IIO_RD[i].td_ns,
+      LOG_IIO_RD[i].avg_occ_rd,
+      LOG_IIO_RD[i].s_avg_occ_rd,
+      LOG_IIO_RD[i].cpu);
+      i++;
   }
 }
 

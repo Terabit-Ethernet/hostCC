@@ -14,8 +14,8 @@ static inline __attribute__((always_inline)) unsigned long rdtscp(void)
 }
 
 static bool terminate_hcc = false;
-static struct workqueue_struct *poll_iio_queue, *poll_mba_queue;
-static struct work_struct poll_iio, poll_mba;
+static struct workqueue_struct *poll_iio_queue, *poll_iio_rd_queue, *poll_mba_queue;
+static struct work_struct poll_iio, poll_iio_rd, poll_mba;
 
 //Netfilter logic to mark ECN bits
 static void sample_counters_nf(int c){
@@ -76,12 +76,108 @@ static void nf_exit(void) {
 		nf_unregister_net_hook(&init_net, nf_markecn_ops);
 		kfree(nf_markecn_ops);
 
-		dump_nf_log();
+		// dump_nf_log();
 	}
 	printk(KERN_INFO "Exit");
 }
 
-// IIO occupancy logic
+// IIO Read occupancy logic (obtained via CHA counters)
+static void update_iio_rd_occ_ctl_reg(void){
+  int cha;
+  uint64_t msr_num;
+  uint32_t low, high;
+  for(cha = 0; cha < NUM_CHA_BOXES; cha++) {
+    msr_num = CHA_MSR_PMON_CTL_BASE + (0x10 * cha) + 0; // counter 0
+    low = CHA_EVENT & 0xFFFFFFFF;
+    high = CHA_EVENT >> 32;
+    wrmsr_on_cpu(CORE_IIO_RD,msr_num,low,high);
+
+    // Filters
+    msr_num = CHA_MSR_PMON_FILTER0_BASE + (0x10 * cha); // Filter0
+    low = CHA_FILTER0 & 0xFFFFFFFF;
+    high = CHA_FILTER0 >> 32;
+    wrmsr_on_cpu(CORE_IIO_RD,msr_num,low,high);
+
+    msr_num = CHA_MSR_PMON_FILTER1_BASE + (0x10 * cha); // Filter1
+    low = CHA_FILTER1 & 0xFFFFFFFF;
+    high = CHA_FILTER1 >> 32;
+    wrmsr_on_cpu(CORE_IIO_RD,msr_num,low,high);
+  }
+}
+
+static void sample_iio_rd_occ_counter(int c){
+  int cha;
+  uint64_t msr_num;
+  uint32_t low = 0, high = 0;
+  cum_occ_sample_rd = 0;
+  for (cha=0; cha<NUM_CHA_BOXES; cha++) {
+    msr_num = CHA_MSR_PMON_CTR_BASE + (0x10 * cha) + 0;
+    rdmsr_on_cpu(c,msr_num,&low,&high);
+    cum_occ_sample_rd += ((uint64_t)high << 32) | low;
+  }
+  prev_cum_occ_rd = cur_cum_occ_rd;
+  cur_cum_occ_rd = cum_occ_sample_rd;
+}
+
+void sample_iio_rd_time_counter(void){
+  tsc_sample_iio_rd = rdtscp();
+	prev_rdtsc_iio_rd = cur_rdtsc_iio_rd;
+	cur_rdtsc_iio_rd = tsc_sample_iio_rd;
+}
+
+static void sample_counters_iio_rd(int c){
+  //first sample occupancy
+	sample_iio_rd_occ_counter(c);
+	//sample time at the last
+	sample_iio_rd_time_counter();
+	return;
+}
+
+static void update_iio_rd_occ(void){
+  latest_time_delta_iio_rd_ns = ((cur_rdtsc_iio_rd - prev_rdtsc_iio_rd) * 10) / 33;
+	if(latest_time_delta_iio_rd_ns > 0){
+		latest_avg_occ_rd = ((cur_cum_occ_rd - prev_cum_occ_rd) * 5) / (latest_time_delta_iio_rd_ns * 12);
+    // ((occ[i] - occ[i-1]) / (((time_us[i+1] - time_us[i])) * 1e-6 * freq)); 
+        if(latest_avg_occ_rd > 0){
+            smoothed_avg_occ_rd = ((7*smoothed_avg_occ_rd) + latest_avg_occ_rd) >> 3;
+        }
+	}
+}
+
+void poll_iio_rd_init(void){
+  //initialize the log
+  printk(KERN_INFO "Starting IIO Rd Sampling");
+  init_iio_rd_log();
+  update_iio_rd_occ_ctl_reg();
+}
+
+void poll_iio_rd_exit(void){
+  //dump log info
+  printk(KERN_INFO "Ending IIO Rd Sampling");
+  flush_workqueue(poll_iio_rd_queue);
+  flush_scheduled_work();
+  destroy_workqueue(poll_iio_rd_queue);
+  dump_iio_rd_log();
+}
+
+void thread_fun_poll_iio_rd(struct work_struct *work){
+  int cpu = CORE_IIO_RD;
+  uint32_t budget = WORKER_BUDGET;
+  while (budget) {
+    sample_counters_iio_rd(cpu); //sample counters
+    update_iio_rd_occ();         //update occupancy value
+    update_log_iio_rd(cpu);      //update the log
+    budget--;
+  }
+  if(!terminate_hcc){
+    queue_work_on(cpu,poll_iio_rd_queue, &poll_iio_rd);
+  }
+  else{
+    return;
+  }
+}
+
+// IIO Write occupancy logic
 static void update_iio_occ_ctl_reg(void){
 	//program the desired CTL register to read the corresponding CTR value
   uint64_t msr_num;
@@ -140,7 +236,7 @@ void poll_iio_exit(void) {
     flush_workqueue(poll_iio_queue);
     flush_scheduled_work();
     destroy_workqueue(poll_iio_queue);
-    dump_iio_log();
+    // dump_iio_log();
 }
 
 static void thread_fun_poll_iio(struct work_struct *work) {
@@ -342,7 +438,7 @@ void poll_mba_exit(void) {
         update_mba_process_scheduler();
         #endif
     }
-    dump_mba_log();
+    // dump_mba_log();
 }
 
 
@@ -369,6 +465,17 @@ static void thread_fun_poll_mba(struct work_struct *work) {
 
 
 static int __init hcc_init(void) {
+  //Start IIO Rd occupancy sampling
+  poll_iio_rd_queue = alloc_workqueue("poll_iio_rd_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
+  if (!poll_iio_rd_queue) {
+      printk(KERN_ERR "Failed to create IIO workqueue\n");
+      return -ENOMEM;
+  }
+  INIT_WORK(&poll_iio_rd, thread_fun_poll_iio_rd);
+  poll_iio_rd_init();
+  queue_work_on(CORE_IIO_RD,poll_iio_rd_queue, &poll_iio_rd);
+
+
   //Start IIO occupancy sampling
   poll_iio_queue = alloc_workqueue("poll_iio_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
   if (!poll_iio_queue) {
@@ -399,6 +506,7 @@ static void __exit hcc_exit(void) {
   terminate_hcc = true;
   nf_exit();
   poll_iio_exit();
+  poll_iio_rd_exit();
   poll_mba_exit();
 }
 
