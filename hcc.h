@@ -136,6 +136,7 @@ uint64_t latest_time_delta_iio_ns = 0;
 #define MBA_VAL_LOW 0
 #define REDUCTION_TIMEOUT_US 150
 #define WORKER_BUDGET 10000000
+#define WORKER_BUDGET_IIO_RD 700000
 
 uint64_t prev_rdtsc_mba = 0;
 uint64_t cur_rdtsc_mba = 0;

@@ -162,7 +162,7 @@ void poll_iio_rd_exit(void){
 
 void thread_fun_poll_iio_rd(struct work_struct *work){
   int cpu = CORE_IIO_RD;
-  uint32_t budget = WORKER_BUDGET;
+  uint32_t budget = WORKER_BUDGET_IIO_RD;
   while (budget) {
     sample_counters_iio_rd(cpu); //sample counters
     update_iio_rd_occ();         //update occupancy value
