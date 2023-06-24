@@ -58,6 +58,8 @@ struct log_entry_mba{
   uint32_t m_avg_occ; //latest measured avg IIO occupancy
   uint32_t s_avg_pcie_bw; //smoothed average PCIe bandwidth
   uint32_t avg_pcie_bw;  //latest PCIe bandwidth sample
+  uint32_t s_avg_pcie_bw_rd; //smoothed average PCIe Rd bandwidth
+  uint32_t avg_pcie_bw_rd;  //latest PCIe Rd bandwidth sample
 };
 
 struct log_entry_nf{
@@ -105,7 +107,6 @@ uint64_t latest_time_delta_iio_rd_ns = 0;
 // IIO occupancy related vars
 #define IRP_MSR_PMON_CTL_BASE 0x0A5BL
 #define IRP_MSR_PMON_CTR_BASE 0x0A59L
-#define IIO_PCIE_1_PORT_0_BW_IN 0x0B20 //We're concerned with PCIe 1 stack on our machine (Table 1-11 in Intel Skylake Manual)
 #define STACK 2 //We're concerned with stack #2 on our machine
 #define IRP_OCC_VAL 0x0040040F
 #define CORE_IIO 24
@@ -123,6 +124,7 @@ uint64_t latest_time_delta_iio_ns = 0;
 #define PQOS_MSR_MBA_MASK_START 0xD50L
 // #define PQOS_MSR_MBA_MASK_START 0x1A4 //TODO: check whether this value is for IceLake machines
 #define IIO_PCIE_1_PORT_0_BW_IN 0x0B20 //We're concerned with PCIe 1 stack on our machine (Table 1-11 in Intel Skylake Manual)
+#define IIO_PCIE_1_PORT_0_BW_OUT 0x0B24 //We're concerned with PCIe 1 stack on our machine (Table 1-11 in Intel Skylake Manual)
 #define NUMA0_CORE 28
 #define NUMA1_CORE 29
 #define NUMA2_CORE 30
@@ -149,6 +151,11 @@ uint32_t smoothed_avg_pcie_bw = 0;
 uint64_t cur_cum_frc = 0;
 uint64_t prev_cum_frc = 0;
 uint64_t cum_frc_sample = 0;
+uint32_t latest_avg_pcie_bw_rd = 0;
+uint32_t smoothed_avg_pcie_bw_rd = 0;
+uint64_t cur_cum_frc_rd = 0;
+uint64_t prev_cum_frc_rd = 0;
+uint64_t cum_frc_rd_sample = 0;
 uint32_t app_pid = 0;
 uint64_t last_reduced_tsc = 0;
 static int target_pid = 0;
@@ -313,6 +320,8 @@ static void update_log_mba(int c){
 	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ = latest_measured_avg_occ;
 	LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw = (smoothed_avg_pcie_bw >> 10);
 	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw = latest_avg_pcie_bw;
+  LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw_rd = (smoothed_avg_pcie_bw_rd >> 10);
+	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw_rd = latest_avg_pcie_bw_rd;
 	log_index_mba++;
 }
 
@@ -334,7 +343,7 @@ static void dump_mba_log(void){
   int i=0;
   // printk("index,latest_tsc,time_delta_ns,cpu,latest_mba_val,latest_measured_avg_occ,avg_pcie_bw,smoothed_avg_pcie_bw\n");
   while(i<LOG_SIZE){
-      printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d\n",
+      printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d\n",
       i,
       LOG_MBA[i].l_tsc,
       LOG_MBA[i].td_ns,
@@ -342,7 +351,9 @@ static void dump_mba_log(void){
       LOG_MBA[i].mba_val,
       LOG_MBA[i].m_avg_occ,
       LOG_MBA[i].avg_pcie_bw,
-      LOG_MBA[i].s_avg_pcie_bw);
+      LOG_MBA[i].s_avg_pcie_bw,
+      LOG_MBA[i].avg_pcie_bw_rd,
+      LOG_MBA[i].s_avg_pcie_bw_rd);
       i++;
   }
 }

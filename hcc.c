@@ -261,11 +261,18 @@ static void thread_fun_poll_iio(struct work_struct *work) {
 static void sample_pcie_bw_counter(int c){
   uint32_t low = 0;
 	uint32_t high = 0;
-	uint64_t msr_num = IIO_PCIE_1_PORT_0_BW_IN;
+	uint64_t msr_num;
+	msr_num = IIO_PCIE_1_PORT_0_BW_IN;
   rdmsr_on_cpu(c,msr_num,&low,&high);
   cum_frc_sample = ((uint64_t)high << 32) | low;
 	prev_cum_frc = cur_cum_frc;
 	cur_cum_frc = cum_frc_sample;
+
+  msr_num = IIO_PCIE_1_PORT_0_BW_OUT;
+  rdmsr_on_cpu(c,msr_num,&low,&high);
+  cum_frc_rd_sample = ((uint64_t)high << 32) | low;
+	prev_cum_frc_rd = cur_cum_frc_rd;
+	cur_cum_frc_rd = cum_frc_rd_sample;
 }
 
 static void sample_mba_time_counter(void){
@@ -289,6 +296,11 @@ static void update_pcie_bw(void){
 		latest_avg_pcie_bw = (cur_cum_frc - prev_cum_frc) / (latest_time_delta_mba_ns >> 5);
         if(latest_avg_pcie_bw < 150){
             smoothed_avg_pcie_bw = ((255*smoothed_avg_pcie_bw) + (latest_avg_pcie_bw << 10)) >> 8;
+        }
+      
+    latest_avg_pcie_bw_rd = (cur_cum_frc_rd - prev_cum_frc_rd) / (latest_time_delta_mba_ns >> 5);
+        if(latest_avg_pcie_bw_rd < 150){
+            smoothed_avg_pcie_bw_rd = ((255*smoothed_avg_pcie_bw_rd) + (latest_avg_pcie_bw_rd << 10)) >> 8;
         }
 	}
 }
