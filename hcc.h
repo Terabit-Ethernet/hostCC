@@ -68,7 +68,7 @@ struct log_entry_nf{
 	uint32_t dat_len; //IP datagram length at last sample
 };
 
-#define LOG_SIZE 1000
+#define LOG_SIZE 100
 struct log_entry_iio LOG_IIO[LOG_SIZE];
 struct log_entry_iio_rd LOG_IIO_RD[LOG_SIZE];
 struct log_entry_mba LOG_MBA[LOG_SIZE];
@@ -237,7 +237,7 @@ static void update_log_iio_rd(int c){
 	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].l_tsc = cur_rdtsc_iio_rd;
 	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].td_ns = latest_time_delta_iio_rd_ns;
 	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].avg_occ_rd = latest_avg_occ_rd;
-	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].s_avg_occ_rd = smoothed_avg_occ_rd;
+	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].s_avg_occ_rd = (smoothed_avg_occ_rd >> 10);
 	LOG_IIO_RD[log_index_iio_rd % LOG_SIZE].cpu = c;
 	log_index_iio_rd++;
 }
@@ -273,7 +273,7 @@ static void update_log_iio(int c){
 	LOG_IIO[log_index_iio % LOG_SIZE].l_tsc = cur_rdtsc_iio;
 	LOG_IIO[log_index_iio % LOG_SIZE].td_ns = latest_time_delta_iio_ns;
 	LOG_IIO[log_index_iio % LOG_SIZE].avg_occ = latest_avg_occ;
-	LOG_IIO[log_index_iio % LOG_SIZE].s_avg_occ = smoothed_avg_occ;
+	LOG_IIO[log_index_iio % LOG_SIZE].s_avg_occ = (smoothed_avg_occ >> 10);
 	LOG_IIO[log_index_iio % LOG_SIZE].cpu = c;
 	log_index_iio++;
 }

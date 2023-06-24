@@ -19,7 +19,7 @@ static struct work_struct poll_iio, poll_iio_rd, poll_mba;
 
 //Netfilter logic to mark ECN bits
 static void sample_counters_nf(int c){
-  latest_measured_avg_occ_nf = smoothed_avg_occ;
+  latest_measured_avg_occ_nf = smoothed_avg_occ >> 10;
 
 	tsc_sample_nf = rdtscp();
 	prev_rdtsc_nf = cur_rdtsc_nf;
@@ -139,7 +139,7 @@ static void update_iio_rd_occ(void){
 		latest_avg_occ_rd = ((cur_cum_occ_rd - prev_cum_occ_rd) * 5) / (latest_time_delta_iio_rd_ns * 12);
     // ((occ[i] - occ[i-1]) / (((time_us[i+1] - time_us[i])) * 1e-6 * freq)); 
         if(latest_avg_occ_rd > 0){
-            smoothed_avg_occ_rd = ((7*smoothed_avg_occ_rd) + latest_avg_occ_rd) >> 3;
+            smoothed_avg_occ_rd = ((7*smoothed_avg_occ_rd) + (latest_avg_occ_rd << 10)) >> 3;
         }
 	}
 }
@@ -218,7 +218,7 @@ static void update_iio_occ(void){
 		latest_avg_occ = (cur_cum_occ - prev_cum_occ) / (latest_time_delta_iio_ns >> 1);
     // ((occ[i] - occ[i-1]) / (((time_us[i+1] - time_us[i])) * 1e-6 * freq)); 
         if(latest_avg_occ > 10){
-            smoothed_avg_occ = ((7*smoothed_avg_occ) + latest_avg_occ) >> 3;
+            smoothed_avg_occ = ((7*smoothed_avg_occ) + (latest_avg_occ << 10)) >> 3;
         }
 	}
 }
@@ -236,7 +236,7 @@ void poll_iio_exit(void) {
     flush_workqueue(poll_iio_queue);
     flush_scheduled_work();
     destroy_workqueue(poll_iio_queue);
-    // dump_iio_log();
+    dump_iio_log();
 }
 
 static void thread_fun_poll_iio(struct work_struct *work) {
@@ -438,7 +438,7 @@ void poll_mba_exit(void) {
         update_mba_process_scheduler();
         #endif
     }
-    // dump_mba_log();
+    dump_mba_log();
 }
 
 
@@ -448,7 +448,7 @@ static void thread_fun_poll_mba(struct work_struct *work) {
   while (budget) {
     sample_counters_pcie_bw(cpu);
     update_pcie_bw();
-    latest_measured_avg_occ = smoothed_avg_occ; //to reflect a consistent IIO occupancy value in log and MBA update logic
+    latest_measured_avg_occ = smoothed_avg_occ >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
     update_mba_val();
     update_log_mba(cpu);
     budget--;
