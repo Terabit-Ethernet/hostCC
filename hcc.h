@@ -16,8 +16,10 @@
 #include <net/ip.h>
 
 //netfilter vars
-static struct nf_hook_ops *nf_markecn_ops = NULL;
-DEFINE_SPINLOCK(etx_spinlock);
+static struct nf_hook_ops *nf_markecn_ops_rx = NULL;
+static struct nf_hook_ops *nf_markecn_ops_tx = NULL;
+DEFINE_SPINLOCK(etx_spinlock_rx);
+DEFINE_SPINLOCK(etx_spinlock_tx);
 
 // kthread scheduling vars
 static void thread_fun_poll_iio(struct work_struct *work);
@@ -131,6 +133,7 @@ uint64_t latest_time_delta_iio_ns = 0;
 #define NUMA3_CORE 31
 #define MBA_COS_ID 1
 #define IIO_THRESHOLD 70
+#define IIO_RD_THRESHOLD 70
 #define PCIE_BW_THRESHOLD 84
 #define BW_TOLERANCE 0
 #define USE_PROCESS_SCHEDULER 1
@@ -146,6 +149,7 @@ uint64_t tsc_sample_mba = 0;
 uint32_t latest_mba_val = 0;
 uint64_t latest_time_delta_mba_ns = 0;
 uint32_t latest_measured_avg_occ = 0;
+uint32_t latest_measured_avg_occ_rd = 0;
 uint32_t latest_avg_pcie_bw = 0;
 uint32_t smoothed_avg_pcie_bw = 0;
 uint64_t cur_cum_frc = 0;
@@ -159,6 +163,7 @@ uint64_t cum_frc_rd_sample = 0;
 uint32_t app_pid = 0;
 uint64_t last_reduced_tsc = 0;
 static int target_pid = 0;
+static const int mode = 0; //mode = 0 => Rx; mode = 1 => Tx
 
 //Netfilter related vars
 enum {
@@ -174,6 +179,7 @@ u64 prev_rdtsc_nf = 0;
 u64 cur_rdtsc_nf = 0;
 u64 tsc_sample_nf = 0;
 u64 latest_measured_avg_occ_nf = 0;
+u64 latest_measured_avg_occ_rd_nf = 0;
 u64 latest_time_delta_nf_ns = 0;
 u32 latest_datagram_len = 0;
 
