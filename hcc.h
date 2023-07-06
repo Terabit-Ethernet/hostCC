@@ -14,6 +14,33 @@
 #include <linux/udp.h>
 #include <linux/string.h>
 #include <net/ip.h>
+#include <linux/mm.h>
+#include <linux/fs.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
+#include <asm/io.h>
+#include <linux/random.h>
+#include "SKX_IMC_BDF_Offset.h"
+
+
+
+// extern char *sh_mem;
+struct pid *app_pid_struct;
+struct timespec64 curr_time;
+char time_str[32];
+u64 sched_time;
+unsigned long long seconds;
+unsigned long microseconds;
+unsigned long nanoseconds;
+u64 last_changed_level_tsc = 0;
+
+// memory bandwidth logging
+unsigned int *mmconfig_ptr;         // must be pointer to 32-bit int so compiler will generate 32-bit loads and stores
+uint64_t imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
+uint64_t prev_imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
+uint64_t cur_imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
+uint64_t latest_avg_rd_bw = 0;
+uint64_t latest_avg_wr_bw = 0;
 
 //netfilter vars
 static struct nf_hook_ops *nf_markecn_ops_rx = NULL;
@@ -29,6 +56,11 @@ static void thread_fun_poll_mba(struct work_struct* work);
 static struct task_struct *thread_iio;
 static struct task_struct *thread_iio_rd;
 static struct task_struct *thread_mba;
+
+static struct task_struct *app_pid_task;
+u64 cur_tsc_sample_pre;
+u64 cur_tsc_sample_post;
+u64 extra_time_needed;
 
 static struct sched_param {
   int sched_priority;
@@ -55,13 +87,18 @@ struct log_entry_iio{
 struct log_entry_mba{
 	uint64_t l_tsc; //latest TSC
 	uint64_t td_ns; //latest measured time delta in us
+	char ktime[32]; //latest measured time delta in us
 	int cpu; //current cpu
 	uint32_t mba_val; // latest MBA value (from 0 to 4, increasing value denotes lower CPU-Memory Bandwidth)
   uint32_t m_avg_occ; //latest measured avg IIO occupancy
   uint32_t s_avg_pcie_bw; //smoothed average PCIe bandwidth
   uint32_t avg_pcie_bw;  //latest PCIe bandwidth sample
+  uint32_t m_avg_occ_rd; //latest measured avg IIO Rd occupancy
   uint32_t s_avg_pcie_bw_rd; //smoothed average PCIe Rd bandwidth
   uint32_t avg_pcie_bw_rd;  //latest PCIe Rd bandwidth sample
+  uint32_t avg_rd_mem_bw;  //Rd memory bandwidth
+  uint32_t avg_wr_mem_bw;  //Wr memory bandwidth
+  uint32_t task_state;
 };
 
 struct log_entry_nf{
@@ -72,7 +109,7 @@ struct log_entry_nf{
 	uint32_t dat_len; //IP datagram length at last sample
 };
 
-#define LOG_SIZE 100
+#define LOG_SIZE 500000
 struct log_entry_iio LOG_IIO[LOG_SIZE];
 struct log_entry_iio_rd LOG_IIO_RD[LOG_SIZE];
 struct log_entry_mba LOG_MBA[LOG_SIZE];
@@ -83,19 +120,10 @@ uint32_t log_index_mba = 0;
 uint32_t log_index_nf = 0;
 
 // IIO Rd occupancy related vars
-#define CHA_EVENT 0x00403436
-#define CHA_FILTER0 0x00000000
-#define CHA_FILTER1 0x00043c33
-
-#define CHA_MSR_PMON_BASE 0x0E00L
-#define CHA_MSR_PMON_CTL_BASE 0x0E01L
-#define CHA_MSR_PMON_FILTER0_BASE 0x0E05L
-#define CHA_MSR_PMON_FILTER1_BASE 0x0E06L
-#define CHA_MSR_PMON_STATUS_BASE 0x0E07L
-#define CHA_MSR_PMON_CTR_BASE 0x0E08L
-#define CORE_IIO_RD 20
-
-#define NUM_CHA_BOXES 18
+#define IIO_MSR_PMON_CTL_BASE 0x0A48L
+#define IIO_MSR_PMON_CTR_BASE 0x0A41L
+#define IIO_OCC_VAL 0x00004000004001D5
+#define CORE_IIO_RD 24
 uint64_t cum_occ_sample_rd;
 uint64_t prev_cum_occ_rd;
 uint64_t cur_cum_occ_rd;
@@ -109,9 +137,10 @@ uint64_t latest_time_delta_iio_rd_ns = 0;
 // IIO occupancy related vars
 #define IRP_MSR_PMON_CTL_BASE 0x0A5BL
 #define IRP_MSR_PMON_CTR_BASE 0x0A59L
-#define STACK 2 //We're concerned with stack #2 on our machine
 #define IRP_OCC_VAL 0x0040040F
+#define STACK 2 //We're concerned with stack #2 on our machine
 #define CORE_IIO 24
+#define IIO_COUNTER_OFFSET 2
 uint64_t prev_rdtsc_iio = 0;
 uint64_t cur_rdtsc_iio = 0;
 uint64_t prev_cum_occ = 0;
@@ -133,15 +162,14 @@ uint64_t latest_time_delta_iio_ns = 0;
 #define NUMA3_CORE 31
 #define MBA_COS_ID 1
 #define IIO_THRESHOLD 70
-#define IIO_RD_THRESHOLD 70
+#define IIO_RD_THRESHOLD 190
 #define PCIE_BW_THRESHOLD 84
 #define BW_TOLERANCE 0
 #define USE_PROCESS_SCHEDULER 1
 #define MBA_VAL_HIGH 90
 #define MBA_VAL_LOW 0
 #define REDUCTION_TIMEOUT_US 150
-#define WORKER_BUDGET 10000000
-#define WORKER_BUDGET_IIO_RD 700000
+#define WORKER_BUDGET 1000000
 
 uint64_t prev_rdtsc_mba = 0;
 uint64_t cur_rdtsc_mba = 0;
@@ -163,7 +191,7 @@ uint64_t cum_frc_rd_sample = 0;
 uint32_t app_pid = 0;
 uint64_t last_reduced_tsc = 0;
 static int target_pid = 0;
-static const int mode = 0; //mode = 0 => Rx; mode = 1 => Tx
+static int mode = 0; //mode = 0 => Rx; mode = 1 => Tx
 
 //Netfilter related vars
 enum {
@@ -187,26 +215,38 @@ u32 latest_datagram_len = 0;
 //helper function to send SIGCONT/SIGSTOP signals to processes
 static int send_signal_to_pid(int proc_pid, int signal)
 {
-    struct pid *pid_struct;
-    struct task_struct *task;
+    // struct task_struct *task;
 
-    if (proc_pid == -1) {
-        pr_err("No target PID specified\n");
-        return -EINVAL;
-    }
+    // if (proc_pid == -1) {
+    //     pr_err("No target PID specified\n");
+    //     return -EINVAL;
+    // }
 
-    pid_struct = find_get_pid(proc_pid);
-    if (!pid_struct) {
-        pr_err("Invalid PID: %d\n", proc_pid);
-        return -EINVAL;
-    }
+    // pid_struct = find_get_pid(proc_pid);
+    // if (!pid_struct) {
+    //     pr_err("Invalid PID: %d\n", proc_pid);
+    //     return -EINVAL;
+    // }
 
-    task = pid_task(pid_struct, PIDTYPE_PID);
-    if (!task) {
-        pr_err("Failed to find task with PID: %d\n", proc_pid);
-        return -EINVAL;
+    // task = pid_task(pid_struct, PIDTYPE_PID);
+    // if (!task) {
+    //     pr_err("Failed to find task with PID: %d\n", proc_pid);
+    //     return -EINVAL;
+    // }
+    // send_sig(signal, task, 0);
+
+    if(app_pid_struct != NULL){
+      rcu_read_lock();
+      kill_pid(app_pid_struct, signal, 1);
+      rcu_read_unlock();
     }
-    send_sig(signal, task, 0);
+    // kill_pid(find_vpid(proc_pid), signal, 1);
+    // if(signal == SIGCONT){
+    //   sprintf(sh_mem, "0003");  
+    // }
+    // else if(signal == SIGSTOP){
+    //   sprintf(sh_mem, "0004");  
+    // }
 
     return 0;
 }
@@ -319,15 +359,26 @@ static void dump_iio_log(void){
 }
 
 static void update_log_mba(int c){
+  sched_time = ktime_get_ns();
+  seconds = sched_time / NSEC_PER_SEC;
+  // microseconds = (sched_time % NSEC_PER_SEC) / NSEC_PER_USEC;
+  nanoseconds = (sched_time % NSEC_PER_SEC);
+  snprintf(LOG_MBA[log_index_mba % LOG_SIZE].ktime, sizeof(time_str), "%llu.%09lu", seconds, nanoseconds);
 	LOG_MBA[log_index_mba % LOG_SIZE].l_tsc = cur_rdtsc_mba;
 	LOG_MBA[log_index_mba % LOG_SIZE].td_ns = latest_time_delta_mba_ns;
 	LOG_MBA[log_index_mba % LOG_SIZE].cpu = c;
 	LOG_MBA[log_index_mba % LOG_SIZE].mba_val = latest_mba_val;
 	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ = latest_measured_avg_occ;
+	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ_rd = latest_measured_avg_occ_rd;
 	LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw = (smoothed_avg_pcie_bw >> 10);
 	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw = latest_avg_pcie_bw;
   LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw_rd = (smoothed_avg_pcie_bw_rd >> 10);
 	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw_rd = latest_avg_pcie_bw_rd;
+	LOG_MBA[log_index_mba % LOG_SIZE].avg_rd_mem_bw = latest_avg_rd_bw;
+	LOG_MBA[log_index_mba % LOG_SIZE].avg_wr_mem_bw = latest_avg_wr_bw;
+  if(app_pid_task != NULL){
+	  LOG_MBA[log_index_mba % LOG_SIZE].task_state = app_pid_task->state;
+  }
 	log_index_mba++;
 }
 
@@ -339,8 +390,12 @@ static void init_mba_log(void){
       LOG_MBA[i].cpu = 65;
       LOG_MBA[i].mba_val = 0;
       LOG_MBA[i].m_avg_occ = 0;
+      LOG_MBA[i].m_avg_occ_rd = 0;
       LOG_MBA[i].avg_pcie_bw = 0;
       LOG_MBA[i].s_avg_pcie_bw = 0;
+      LOG_MBA[i].avg_rd_mem_bw = 0;
+      LOG_MBA[i].avg_wr_mem_bw = 0;
+      LOG_MBA[i].task_state = 0xFFFF;
       i++;
   }
 }
@@ -349,7 +404,7 @@ static void dump_mba_log(void){
   int i=0;
   // printk("index,latest_tsc,time_delta_ns,cpu,latest_mba_val,latest_measured_avg_occ,avg_pcie_bw,smoothed_avg_pcie_bw\n");
   while(i<LOG_SIZE){
-      printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d\n",
+      printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%lld,%x,%s\n",
       i,
       LOG_MBA[i].l_tsc,
       LOG_MBA[i].td_ns,
@@ -358,8 +413,13 @@ static void dump_mba_log(void){
       LOG_MBA[i].m_avg_occ,
       LOG_MBA[i].avg_pcie_bw,
       LOG_MBA[i].s_avg_pcie_bw,
+      LOG_MBA[i].m_avg_occ_rd,
       LOG_MBA[i].avg_pcie_bw_rd,
-      LOG_MBA[i].s_avg_pcie_bw_rd);
+      LOG_MBA[i].s_avg_pcie_bw_rd,
+      LOG_MBA[i].avg_rd_mem_bw,
+      LOG_MBA[i].avg_wr_mem_bw,
+      LOG_MBA[i].task_state,
+      LOG_MBA[i].ktime);
       i++;
   }
 }
