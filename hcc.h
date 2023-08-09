@@ -140,7 +140,7 @@ uint64_t latest_time_delta_iio_rd_ns = 0;
 #define IRP_OCC_VAL 0x0040040F
 #define STACK 2 //We're concerned with stack #2 on our machine
 #define CORE_IIO 24
-#define IIO_COUNTER_OFFSET 2
+#define IIO_COUNTER_OFFSET 0
 uint64_t prev_rdtsc_iio = 0;
 uint64_t cur_rdtsc_iio = 0;
 uint64_t prev_cum_occ = 0;
@@ -161,9 +161,9 @@ uint64_t latest_time_delta_iio_ns = 0;
 #define NUMA2_CORE 30
 #define NUMA3_CORE 31
 #define MBA_COS_ID 1
-#define IIO_THRESHOLD 70
+// #define IIO_THRESHOLD 70
 #define IIO_RD_THRESHOLD 190
-#define PCIE_BW_THRESHOLD 84
+// #define PCIE_BW_THRESHOLD 84
 #define BW_TOLERANCE 0
 #define USE_PROCESS_SCHEDULER 1
 #define MBA_VAL_HIGH 90
@@ -191,6 +191,8 @@ uint64_t cum_frc_rd_sample = 0;
 uint32_t app_pid = 0;
 uint64_t last_reduced_tsc = 0;
 static int target_pid = 0;
+static int target_pcie_thresh = 84;
+static int target_iio_thresh = 70;
 static int mode = 0; //mode = 0 => Rx; mode = 1 => Tx
 
 //Netfilter related vars
@@ -359,11 +361,11 @@ static void dump_iio_log(void){
 }
 
 static void update_log_mba(int c){
-  sched_time = ktime_get_ns();
-  seconds = sched_time / NSEC_PER_SEC;
+  // sched_time = ktime_get_ns();
+  // seconds = sched_time / NSEC_PER_SEC;
   // microseconds = (sched_time % NSEC_PER_SEC) / NSEC_PER_USEC;
-  nanoseconds = (sched_time % NSEC_PER_SEC);
-  snprintf(LOG_MBA[log_index_mba % LOG_SIZE].ktime, sizeof(time_str), "%llu.%09lu", seconds, nanoseconds);
+  // nanoseconds = (sched_time % NSEC_PER_SEC);
+  // snprintf(LOG_MBA[log_index_mba % LOG_SIZE].ktime, sizeof(time_str), "%llu.%09lu", seconds, nanoseconds);
 	LOG_MBA[log_index_mba % LOG_SIZE].l_tsc = cur_rdtsc_mba;
 	LOG_MBA[log_index_mba % LOG_SIZE].td_ns = latest_time_delta_mba_ns;
 	LOG_MBA[log_index_mba % LOG_SIZE].cpu = c;
@@ -404,7 +406,7 @@ static void dump_mba_log(void){
   int i=0;
   // printk("index,latest_tsc,time_delta_ns,cpu,latest_mba_val,latest_measured_avg_occ,avg_pcie_bw,smoothed_avg_pcie_bw\n");
   while(i<LOG_SIZE){
-      printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%lld,%x,%s\n",
+      printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%lld,%x\n",
       i,
       LOG_MBA[i].l_tsc,
       LOG_MBA[i].td_ns,
@@ -418,8 +420,8 @@ static void dump_mba_log(void){
       LOG_MBA[i].s_avg_pcie_bw_rd,
       LOG_MBA[i].avg_rd_mem_bw,
       LOG_MBA[i].avg_wr_mem_bw,
-      LOG_MBA[i].task_state,
-      LOG_MBA[i].ktime);
+      LOG_MBA[i].task_state);
+      // LOG_MBA[i].ktime);
       i++;
   }
 }

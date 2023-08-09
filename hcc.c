@@ -1,6 +1,8 @@
 #include "hcc.h"
 
 module_param(target_pid, int, 0);
+module_param(target_pcie_thresh, int, 0);
+module_param(target_iio_thresh, int, 0);
 module_param(mode, int, 0);
 MODULE_PARM_DESC(target_pid, "Target process ID");
 MODULE_PARM_DESC(mode, "Mode of operation (Rx: 0, or Tx: 1) -- needed for proper host resource allocation");
@@ -40,6 +42,10 @@ static void sample_counters_nf(int c){
 static unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
    struct net_device *indev = state->in;
+   const char* interfaceName = indev->name;
+   if(strcmp(interfaceName,"ens2f1") != 0){
+    return NF_ACCEPT;
+  }
 	if (!skb) {
 		return NF_ACCEPT;
 	} 
@@ -57,7 +63,16 @@ static unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const
       update_log_nf(cpu);
     }
     #if !(NO_ECN_MARKING)
-    if(latest_measured_avg_occ_nf > IIO_THRESHOLD){
+    // unsigned int min_value = 0;
+    // unsigned int max_value = 100;
+    // unsigned int random_number;
+
+    // // Generate a random integer between min_value and max_value
+    // random_number = get_random_int() % (max_value - min_value + 1) + min_value;
+        // mba_test(random_number * 50,random_number * 50,cpu);
+        // mba_test(500,100,cpu);
+    // if(random_number > 90){
+    if(latest_measured_avg_occ_nf > target_iio_thresh){
         iph->tos = iph->tos | 0x03;
         iph->check = 0;
         ip_send_check(iph);
@@ -293,7 +308,7 @@ void poll_iio_exit(void) {
     flush_workqueue(poll_iio_queue);
     flush_scheduled_work();
     destroy_workqueue(poll_iio_queue);
-    // dump_iio_log();
+    //dump_iio_log();
 }
 
 static void thread_fun_poll_iio(struct work_struct *work) {
@@ -569,26 +584,26 @@ static void decrease_mba_val(void){
 static void update_mba_val(void){
   if(mode == 0){
     //Rx side logic
-    if((smoothed_avg_pcie_bw) < (PCIE_BW_THRESHOLD << 10)){
-        if(latest_measured_avg_occ > IIO_THRESHOLD){
+    if((smoothed_avg_pcie_bw) < (target_pcie_thresh << 10)){
+        if(latest_measured_avg_occ > target_iio_thresh){
             increase_mba_val();
         }
     }
 
-    if((smoothed_avg_pcie_bw) > (PCIE_BW_THRESHOLD << 10)){
-        if(latest_measured_avg_occ < IIO_THRESHOLD){
+    if((smoothed_avg_pcie_bw) > (target_pcie_thresh << 10)){
+        if(latest_measured_avg_occ < target_iio_thresh){
             decrease_mba_val();
         }
     }
   } else{
     //Tx side logic
-    if((smoothed_avg_pcie_bw_rd) < (PCIE_BW_THRESHOLD << 10)){
+    if((smoothed_avg_pcie_bw_rd) < (target_pcie_thresh << 10)){
         if(latest_measured_avg_occ_rd > IIO_RD_THRESHOLD){
             increase_mba_val();
         }
     }
 
-    if((smoothed_avg_pcie_bw_rd ) > (PCIE_BW_THRESHOLD << 10)){
+    if((smoothed_avg_pcie_bw_rd ) > (target_pcie_thresh << 10)){
         if(latest_measured_avg_occ_rd < IIO_RD_THRESHOLD){
             decrease_mba_val();
         }
