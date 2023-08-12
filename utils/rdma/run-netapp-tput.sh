@@ -3,6 +3,7 @@
 help()
 {
     echo "Usage: run-netapp-tput [ -m | --mode (=client/server) ]
+               [ -o | --outdir (output directory to store the application stats log; default='test')]
                [ -d | --dev (RDMA device, for eg., mlx5_0/mlx5_1 for port0/1 if using Mellanox CX5 NICs; device list be found at /sys/class/infiniband/) ]
                [ -a | --addr (ip address of the server, only use this option at client) ]
                [ -t | --txn (=read/write/send; provides what RDMA transaction to use) ]
@@ -16,8 +17,8 @@ help()
     exit 2
 }
 
-SHORT=m:,d:,a:,t:,M:,s:,x:,D:,S:,h
-LONG=mode:,dev:,addr:,txn:,MTU:,size:,gid_index:,dur:,sl:,help
+SHORT=m:,o:,d:,a:,t:,M:,s:,x:,D:,S:,h
+LONG=mode:,outdir:,dev:,addr:,txn:,MTU:,size:,gid_index:,dur:,sl:,help
 OPTS=$(getopt -a -n run-netapp-tput --options $SHORT --longoptions $LONG -- "$@")
 
 VALID_ARGUMENTS=$# # Returns the count of arguments that are in short or long options
@@ -30,6 +31,7 @@ eval set -- "$OPTS"
 
 #default values
 mode="client"
+outdir="test"
 dev="mlx5_1"
 addr="192.168.11.122"
 txn="write"
@@ -46,6 +48,10 @@ do
   case "$1" in
     -m | --mode )
       mode="$2"
+      shift 2
+      ;;
+    -o | --outdir )
+      outdir="$2"
       shift 2
       ;;
     -d | --dev )
@@ -98,20 +104,23 @@ do
   esac
 done
 
+mkdir -p ../logs #Directory to store collected logs
+mkdir -p ../logs/$outdir #Directory to store collected logs
+
 if [ "$mode" = "server" ]
 then
     if [ "$txn" = "read" ]
     then
-        echo "taskset -c $cpu ib_read_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl"
-        taskset -c $cpu ib_read_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl
+        echo "taskset -c $cpu ib_read_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl" > ../logs/$outdir/perf.bw.log
+        taskset -c $cpu ib_read_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
     elif [ "$txn" = "write" ]
     then
-        echo "taskset -c $cpu ib_write_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl"
-        taskset -c $cpu ib_write_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl
+        echo "taskset -c $cpu ib_write_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl" > ../logs/$outdir/perf.bw.log
+        taskset -c $cpu ib_write_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
     elif [ "$txn" = "send" ]
     then
-        echo "taskset -c $cpu ib_send_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl"
-        taskset -c $cpu ib_send_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl
+        echo "taskset -c $cpu ib_send_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl" > ../logs/$outdir/perf.bw.log
+        taskset -c $cpu ib_send_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
     else
         echo "incorrect argument specified"
         help
@@ -120,16 +129,16 @@ elif [ "$mode" = "client" ]
 then
     if [ "$txn" = "read" ]
     then
-        echo "taskset -c $cpu ib_read_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur"
-        taskset -c $cpu ib_read_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur
+        echo "taskset -c $cpu ib_read_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur" > ../logs/$outdir/perf.bw.log
+        taskset -c $cpu ib_read_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
     elif [ "$txn" = "write" ]
     then
-        echo "taskset -c $cpu ib_write_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur"
-        taskset -c $cpu ib_write_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur
+        echo "taskset -c $cpu ib_write_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur" > ../logs/$outdir/perf.bw.log
+        taskset -c $cpu ib_write_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
     elif [ "$txn" = "send" ]
     then
-        echo "taskset -c $cpu ib_send_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur"
-        taskset -c $cpu ib_send_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur
+        echo "taskset -c $cpu ib_send_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur" > ../logs/$outdir/perf.bw.log
+        taskset -c $cpu ib_send_bw $addr -F -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
     else
         echo "incorrect argument specified"
         help
