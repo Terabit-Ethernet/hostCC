@@ -199,7 +199,7 @@ function collect_pfc() {
     echo "pause_duration_after: "$pause_duration_after >> logs/$outdir/pause.log
 
     # echo $pause_before, $pause_after
-    echo "print(($pause_after - $pause_before)/$dur)" | lua >> reports/$outdir/pause.rpt
+    echo "print(($pause_after - $pause_before)/$dur)" | lua > reports/$outdir/pause.rpt
 
     # echo $pause_duration_before, $pause_duration_after
     echo "print(($pause_duration_after - $pause_duration_before)/$dur)" | lua >> reports/$outdir/pause.rpt
