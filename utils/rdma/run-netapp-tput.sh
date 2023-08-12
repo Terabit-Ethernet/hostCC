@@ -104,8 +104,20 @@ do
   esac
 done
 
+mkdir -p ../reports #Directory to store collected logs
+mkdir -p ../reports/$outdir #Directory to store collected logs
 mkdir -p ../logs #Directory to store collected logs
 mkdir -p ../logs/$outdir #Directory to store collected logs
+
+function collect_stats() {
+  echo "Collecting app throughput for RDMA server..."
+  average_bw=$(awk '/BW average\[Gb\/sec\]/{ getline; print $4 }' "../logs/$outdir/perf.bw.log")
+  echo $average_bw > ../reports/$outdir/perf.bw.rpt
+
+  echo "Collecting cpu util for RDMA server..."
+  cpu_util=$(awk '/CPU_Util\[%\]/{ getline; print $6 }' "../logs/$outdir/perf.bw.log")
+  echo $cpu_util > ../reports/$outdir/cpu_util.rpt
+}
 
 if [ "$mode" = "server" ]
 then
@@ -113,14 +125,17 @@ then
     then
         echo "taskset -c $cpu ib_read_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl" > ../logs/$outdir/perf.bw.log
         taskset -c $cpu ib_read_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
+        collect_stats
     elif [ "$txn" = "write" ]
     then
         echo "taskset -c $cpu ib_write_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl" > ../logs/$outdir/perf.bw.log
         taskset -c $cpu ib_write_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
+        collect_stats
     elif [ "$txn" = "send" ]
     then
         echo "taskset -c $cpu ib_send_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl" > ../logs/$outdir/perf.bw.log
         taskset -c $cpu ib_send_bw -d $dev -x $gid_index --cpu_util --report_gbits -s $size -m $mtu -S $sl -D$dur >> ../logs/$outdir/perf.bw.log
+        collect_stats
     else
         echo "incorrect argument specified"
         help
