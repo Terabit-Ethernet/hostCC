@@ -1,0 +1,7 @@
+obj-m += hostcc.o
+hostcc-objs := hostcc-local-response.o hostcc-signals.o hostcc-network-response.o hostcc-logging.o
+PWD := $(CURDIR)
+all:
+		make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+clean:
+		make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
