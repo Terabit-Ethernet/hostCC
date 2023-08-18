@@ -21,7 +21,7 @@ extern uint64_t latest_avg_wr_bw;
 
 extern int target_pid;
 extern int target_pcie_thresh;
-extern int target_iio_thresh;
+extern int target_iio_wr_thresh;
 extern int target_iio_rd_thresh;
 extern int mode; //mode = 0 => Rx; mode = 1 => Tx
 
@@ -30,26 +30,23 @@ extern int mode; //mode = 0 => Rx; mode = 1 => Tx
 #define IIO_MSR_PMON_CTR_BASE 0x0A41L
 #define IIO_OCC_VAL 0x00004000004001D5
 #define CORE_IIO_RD 24
-
+#define IIO_RD_COUNTER_OFFSET 2
 extern uint64_t cur_rdtsc_iio_rd;
-
 extern uint64_t latest_avg_occ_rd;
 extern uint64_t smoothed_avg_occ_rd;
 extern uint64_t latest_time_delta_iio_rd_ns;
 
-// IIO occupancy related vars
+// IIO Wr occupancy related vars
 #define IRP_MSR_PMON_CTL_BASE 0x0A5BL
 #define IRP_MSR_PMON_CTR_BASE 0x0A59L
 #define IRP_OCC_VAL 0x0040040F
 #define STACK 2 //We're concerned with stack #2 on our machine
 #define CORE_IIO 24
-#define IIO_COUNTER_OFFSET 0
-
-extern uint64_t cur_rdtsc_iio;
-
-extern uint64_t latest_avg_occ;
-extern uint64_t smoothed_avg_occ;
-extern uint64_t latest_time_delta_iio_ns;
+#define IIO_WR_COUNTER_OFFSET 0
+extern uint64_t cur_rdtsc_iio_wr;
+extern uint64_t latest_avg_occ_wr;
+extern uint64_t smoothed_avg_occ_wr;
+extern uint64_t latest_time_delta_iio_wr_ns;
 
 // PCIe bandwidth and MBA update related vars
 
@@ -62,7 +59,7 @@ extern uint64_t cur_rdtsc_mba;
 
 extern uint32_t latest_mba_val;
 extern uint64_t latest_time_delta_mba_ns;
-extern uint32_t latest_measured_avg_occ;
+extern uint32_t latest_measured_avg_occ_wr;
 extern uint32_t latest_measured_avg_occ_rd;
 extern uint32_t latest_avg_pcie_bw;
 extern uint32_t smoothed_avg_pcie_bw;
@@ -78,17 +75,11 @@ void sample_iio_rd_occ_counter(int c);
 void sample_iio_rd_time_counter(void);
 void sample_counters_iio_rd(int c);
 void update_iio_rd_occ(void);
-// void poll_iio_rd_init(void);
-// void poll_iio_rd_exit(void);
-// void thread_fun_poll_iio_rd(struct work_struct *work);
-void update_iio_occ_ctl_reg(void);
-void sample_iio_occ_counter(int c);
-void sample_iio_time_counter(void);
-void sample_counters_iio(int c);
-void update_iio_occ(void);
-// void poll_iio_init(void);
-// void poll_iio_exit(void);
-// void thread_fun_poll_iio(struct work_struct *work);
+void update_iio_wr_occ_ctl_reg(void);
+void sample_iio_wr_occ_counter(int c);
+void sample_iio_wr_time_counter(void);
+void sample_counters_iio_wr(int c);
+void update_iio_wr_occ(void);
 void sample_pcie_bw_counter(int c);
 void sample_mba_time_counter(void);
 uint32_t PCI_cfg_index(unsigned int Bus, unsigned int Device, unsigned int Function, unsigned int Offset);

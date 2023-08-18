@@ -10,7 +10,7 @@ extern uint32_t latest_mba_val;
 extern uint64_t last_reduced_tsc;
 extern uint32_t smoothed_avg_pcie_bw;
 extern uint32_t smoothed_avg_pcie_bw_rd;
-extern uint32_t latest_measured_avg_occ;
+extern uint32_t latest_measured_avg_occ_wr;
 extern uint32_t latest_measured_avg_occ_rd;
 extern struct task_struct *app_pid_task = NULL;
 extern struct pid *app_pid_struct = NULL;
@@ -18,7 +18,7 @@ extern uint32_t app_pid;
 extern int mode;
 extern int target_pid;
 extern int target_pcie_thresh;
-extern int target_iio_thresh;
+extern int target_iio_wr_thresh;
 extern int target_iio_rd_thresh;
 extern u64 last_changed_level_tsc;
 
@@ -169,13 +169,13 @@ void host_local_response(void){
   if(mode == 0){
     //Rx side logic
     if((smoothed_avg_pcie_bw) < (target_pcie_thresh << 10)){
-        if(latest_measured_avg_occ > target_iio_thresh){
+        if(latest_measured_avg_occ_wr > target_iio_wr_thresh){
             increase_mba_val();
         }
     }
 
     if((smoothed_avg_pcie_bw) > (target_pcie_thresh << 10)){
-        if(latest_measured_avg_occ < target_iio_thresh){
+        if(latest_measured_avg_occ_wr < target_iio_wr_thresh){
             decrease_mba_val();
         }
     }

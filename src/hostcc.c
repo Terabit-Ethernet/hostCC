@@ -6,7 +6,7 @@
 
 module_param(target_pid, int, 0);
 module_param(target_pcie_thresh, int, 0);
-module_param(target_iio_thresh, int, 0);
+module_param(target_iio_wr_thresh, int, 0);
 module_param(target_iio_rd_thresh, int, 0);
 module_param(mode, int, 0);
 MODULE_PARM_DESC(target_pid, "Target process ID");
@@ -15,53 +15,21 @@ MODULE_LICENSE("GPL");
 
 extern bool terminate_hcc;
 extern bool terminate_hcc_logging;
-struct workqueue_struct *poll_iio_queue, *poll_iio_rd_queue, *poll_pcie_queue;
-struct work_struct poll_iio, poll_iio_rd, poll_pcie;
-
-extern uint64_t smoothed_avg_occ;
-extern uint32_t latest_measured_avg_occ;
+struct workqueue_struct *poll_iio_queue, *poll_pcie_queue;
+struct work_struct poll_iio, poll_pcie;
 extern int mode;
-
-void poll_iio_rd_init(void){
-  //initialize the log
-  printk(KERN_INFO "Starting IIO Rd Sampling");
-  init_iio_rd_log();
-  update_iio_rd_occ_ctl_reg();
-}
-
-void poll_iio_rd_exit(void){
-  //dump log info
-  printk(KERN_INFO "Ending IIO Rd Sampling");
-  flush_workqueue(poll_iio_rd_queue);
-  flush_scheduled_work();
-  destroy_workqueue(poll_iio_rd_queue);
-  // dump_iio_rd_log();
-}
-
-void thread_fun_poll_iio_rd(struct work_struct *work){
-  int cpu = CORE_IIO_RD;
-  uint32_t budget = WORKER_BUDGET;
-  while (budget) {
-    sample_counters_iio_rd(cpu); //sample counters
-    update_iio_rd_occ();         //update occupancy value
-    if(!terminate_hcc_logging){
-      update_log_iio_rd(cpu);      //update the log
-    }
-    budget--;
-  }
-  if(!terminate_hcc){
-    queue_work_on(cpu,poll_iio_rd_queue, &poll_iio_rd);
-  }
-  else{
-    return;
-  }
-}
 
 void poll_iio_init(void) {
     //initialize the log
     printk(KERN_INFO "Starting IIO Sampling");
-    init_iio_log();
-    update_iio_occ_ctl_reg();
+    if(mode == 0){
+      init_iio_wr_log();
+      update_iio_wr_occ_ctl_reg();
+    }
+    else{
+      init_iio_rd_log();
+      update_iio_rd_occ_ctl_reg();
+    }
 }
 
 void poll_iio_exit(void) {
@@ -70,17 +38,31 @@ void poll_iio_exit(void) {
     flush_workqueue(poll_iio_queue);
     flush_scheduled_work();
     destroy_workqueue(poll_iio_queue);
-    //dump_iio_log();
+    if(mode == 0){
+      //dump_iio_wr_log();
+    }
+    else{
+      //dump_iio_rd_log();
+    }
 }
 
 void thread_fun_poll_iio(struct work_struct *work) {
   int cpu = CORE_IIO;
   uint32_t budget = WORKER_BUDGET;
   while (budget) {
-    sample_counters_iio(cpu); //sample counters
-    update_iio_occ();         //update occupancy value
-    if(!terminate_hcc_logging){
-      update_log_iio(cpu);      //update the log
+    if(mode == 0){
+      sample_counters_iio_wr(cpu); //sample counters
+      update_iio_wr_occ();         //update occupancy value
+      if(!terminate_hcc_logging){
+        update_log_iio_wr(cpu);      //update the log
+      }
+    }
+    else{
+      sample_counters_iio_rd(cpu); //sample counters
+      update_iio_rd_occ();         //update occupancy value
+      if(!terminate_hcc_logging){
+        update_log_iio_rd(cpu);      //update the log
+      }
     }
     budget--;
   }
@@ -131,7 +113,7 @@ void thread_fun_poll_pcie(struct work_struct *work) {
     update_pcie_bw();
     // update_imc_bw();
     if(mode == 0){
-    latest_measured_avg_occ = smoothed_avg_occ >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
+    latest_measured_avg_occ_wr = smoothed_avg_occ_wr >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
     } else{
     latest_measured_avg_occ_rd = smoothed_avg_occ_rd >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
     }
@@ -152,27 +134,15 @@ void thread_fun_poll_pcie(struct work_struct *work) {
 
 static int __init hostcc_init(void) {
   printk("Initializing hostcc");
-  if(mode == 0){
-    //Start IIO occupancy measurement
-    poll_iio_queue = alloc_workqueue("poll_iio_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
-    if (!poll_iio_queue) {
-        printk(KERN_ERR "Failed to create IIO workqueue\n");
-        return -ENOMEM;
-    }
-    INIT_WORK(&poll_iio, thread_fun_poll_iio);
-    poll_iio_init();
-    queue_work_on(CORE_IIO,poll_iio_queue, &poll_iio);
-  } else {
-    //Start IIO Rd occupancy measurement
-    poll_iio_rd_queue = alloc_workqueue("poll_iio_rd_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
-    if (!poll_iio_rd_queue) {
-        printk(KERN_ERR "Failed to create IIO Rd workqueue\n");
-        return -ENOMEM;
-    }
-    INIT_WORK(&poll_iio_rd, thread_fun_poll_iio_rd);
-    poll_iio_rd_init();
-    queue_work_on(CORE_IIO_RD,poll_iio_rd_queue, &poll_iio_rd);
+  //Start IIO occupancy measurement
+  poll_iio_queue = alloc_workqueue("poll_iio_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
+  if (!poll_iio_queue) {
+      printk(KERN_ERR "Failed to create IIO workqueue\n");
+      return -ENOMEM;
   }
+  INIT_WORK(&poll_iio, thread_fun_poll_iio);
+  poll_iio_init();
+  queue_work_on(CORE_IIO,poll_iio_queue, &poll_iio);
 
   //Start PCIe bandwidth measurement
   poll_pcie_queue = alloc_workqueue("poll_pcie_queue", WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
@@ -195,11 +165,7 @@ static void __exit hostcc_exit(void) {
   msleep(5000);
   terminate_hcc = true;
   nf_exit();
-  if(mode == 0){
   poll_iio_exit();
-  } else {
-  poll_iio_rd_exit();
-  }
   poll_pcie_exit();
 }
 

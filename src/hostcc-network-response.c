@@ -7,16 +7,16 @@ extern bool terminate_hcc_logging;
 extern int mode;
 extern int target_pid;
 extern int target_pcie_thresh;
-extern int target_iio_thresh;
+extern int target_iio_wr_thresh;
 extern int target_iio_rd_thresh;
 
 extern uint64_t smoothed_avg_occ_rd;
-extern uint64_t smoothed_avg_occ;
+extern uint64_t smoothed_avg_occ_wr;
 
 DEFINE_SPINLOCK(etx_spinlock_rx);
 DEFINE_SPINLOCK(etx_spinlock_tx);
 
-u64 latest_measured_avg_occ_nf = 0;
+u64 latest_measured_avg_occ_wr_nf = 0;
 u64 latest_measured_avg_occ_rd_nf = 0;
 u64 latest_time_delta_nf_ns = 0;
 u32 latest_datagram_len = 0;
@@ -28,7 +28,7 @@ u64 prev_rdtsc_nf = 0;
 //Netfilter logic to mark ECN bits
 void sample_counters_nf(int c){
   if(mode == 0){
-    latest_measured_avg_occ_nf = smoothed_avg_occ >> 10;
+    latest_measured_avg_occ_wr_nf = smoothed_avg_occ_wr >> 10;
   }
   else {
     latest_measured_avg_occ_rd_nf = smoothed_avg_occ_rd >> 10;
@@ -66,7 +66,7 @@ unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct
       update_log_nf(cpu);
     }
     #if !(NO_ECN_MARKING)
-    if(latest_measured_avg_occ_nf > target_iio_thresh){
+    if(latest_measured_avg_occ_wr_nf > target_iio_wr_thresh){
         iph->tos = iph->tos | 0x03;
         iph->check = 0;
         ip_send_check(iph);

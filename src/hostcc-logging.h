@@ -10,7 +10,7 @@ struct log_entry_iio_rd{
 	int cpu; //current cpu
 };
 
-struct log_entry_iio{
+struct log_entry_iio_wr{
 	uint64_t l_tsc; //latest TSC
 	uint64_t td_ns; //latest measured time delta in us
 	uint64_t avg_occ; //latest measured avg IIO occupancy
@@ -51,9 +51,9 @@ void dump_nf_log(void);
 void update_log_iio_rd(int c);
 void init_iio_rd_log(void);
 void dump_iio_rd_log(void);
-void update_log_iio(int c);
-void init_iio_log(void);
-void dump_iio_log(void);
+void update_log_iio_wr(int c);
+void init_iio_wr_log(void);
+void dump_iio_wr_log(void);
 void update_log_mba(int c);
 void init_mba_log(void);
 void dump_mba_log(void);

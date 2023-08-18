@@ -7,29 +7,26 @@
 #include <linux/delay.h>
 #include <linux/signal.h>
 #include <linux/sched/signal.h>
-// #include "hostcc-signals.h"
-// #include "hostcc-network-response.h"
-// #include "hostcc-local-response.h"
 #include "hostcc-logging.h"
 
 extern uint64_t smoothed_avg_occ_rd;
-extern uint64_t smoothed_avg_occ;
+extern uint64_t smoothed_avg_occ_wr;
 
 extern u64 cur_rdtsc_nf;
 extern u64 latest_time_delta_nf_ns;
 extern u32 latest_datagram_len;
-extern u64 latest_measured_avg_occ_nf;
+extern u64 latest_measured_avg_occ_wr_nf;
 extern u64 latest_measured_avg_occ_rd_nf;
 extern uint64_t latest_time_delta_iio_rd_ns;
-extern uint64_t cur_rdtsc_iio;
+extern uint64_t cur_rdtsc_iio_wr;
 extern uint64_t latest_avg_occ_rd;
 extern uint64_t cur_rdtsc_iio_rd;
-extern uint64_t latest_avg_occ;
-extern uint64_t latest_time_delta_iio_ns;
+extern uint64_t latest_avg_occ_wr;
+extern uint64_t latest_time_delta_iio_wr_ns;
 
 extern uint64_t cur_rdtsc_mba;
 extern uint64_t latest_time_delta_mba_ns;
-extern uint32_t latest_measured_avg_occ;
+extern uint32_t latest_measured_avg_occ_wr;
 extern uint32_t latest_measured_avg_occ_rd;
 extern uint32_t latest_mba_val;
 extern uint32_t smoothed_avg_pcie_bw;
@@ -42,11 +39,11 @@ extern uint32_t latest_avg_pcie_bw_rd;
 
 extern struct task_struct *app_pid_task;
 
-struct log_entry_iio LOG_IIO[LOG_SIZE];
+struct log_entry_iio_wr LOG_IIO_WR[LOG_SIZE];
 struct log_entry_iio_rd LOG_IIO_RD[LOG_SIZE];
 struct log_entry_mba LOG_MBA[LOG_SIZE];
 struct log_entry_nf LOG_NF[LOG_SIZE];
-uint32_t log_index_iio = 0;
+uint32_t log_index_iio_wr = 0;
 uint32_t log_index_iio_rd = 0;
 uint32_t log_index_mba = 0;
 uint32_t log_index_nf = 0;
@@ -54,7 +51,7 @@ uint32_t log_index_nf = 0;
 void update_log_nf(int c){
 	LOG_NF[log_index_nf % LOG_SIZE].l_tsc = cur_rdtsc_nf;
 	LOG_NF[log_index_nf % LOG_SIZE].td_ns = latest_time_delta_nf_ns;
-	LOG_NF[log_index_nf % LOG_SIZE].m_avg_occ = latest_measured_avg_occ_nf;
+	LOG_NF[log_index_nf % LOG_SIZE].m_avg_occ = latest_measured_avg_occ_wr_nf;
 	LOG_NF[log_index_nf % LOG_SIZE].cpu = c;
 	LOG_NF[log_index_nf % LOG_SIZE].dat_len = latest_datagram_len;
 	log_index_nf++;
@@ -113,7 +110,6 @@ void init_iio_rd_log(void){
 
 void dump_iio_rd_log(void){
   int i=0;
-  // printk("index,latest_tsc,time_delta_ns,avg_occ,s_avg_occ,cpu\n");
   while(i<LOG_SIZE){
       printk("IIORD:%d,%lld,%lld,%lld,%lld,%d\n",
       i,
@@ -126,53 +122,47 @@ void dump_iio_rd_log(void){
   }
 }
 
-void update_log_iio(int c){
-	LOG_IIO[log_index_iio % LOG_SIZE].l_tsc = cur_rdtsc_iio;
-	LOG_IIO[log_index_iio % LOG_SIZE].td_ns = latest_time_delta_iio_ns;
-	LOG_IIO[log_index_iio % LOG_SIZE].avg_occ = latest_avg_occ;
-	LOG_IIO[log_index_iio % LOG_SIZE].s_avg_occ = (smoothed_avg_occ >> 10);
-	LOG_IIO[log_index_iio % LOG_SIZE].cpu = c;
-	log_index_iio++;
+void update_log_iio_wr(int c){
+	LOG_IIO_WR[log_index_iio_wr % LOG_SIZE].l_tsc = cur_rdtsc_iio_wr;
+	LOG_IIO_WR[log_index_iio_wr % LOG_SIZE].td_ns = latest_time_delta_iio_wr_ns;
+	LOG_IIO_WR[log_index_iio_wr % LOG_SIZE].avg_occ = latest_avg_occ_wr;
+	LOG_IIO_WR[log_index_iio_wr % LOG_SIZE].s_avg_occ = (smoothed_avg_occ_wr >> 10);
+	LOG_IIO_WR[log_index_iio_wr % LOG_SIZE].cpu = c;
+	log_index_iio_wr++;
 }
 
-void init_iio_log(void){
+void init_iio_wr_log(void){
   int i=0;
   while(i<LOG_SIZE){
-      LOG_IIO[i].l_tsc = 0;
-      LOG_IIO[i].td_ns = 0;
-      LOG_IIO[i].avg_occ = 0;
-      LOG_IIO[i].s_avg_occ = 0;
-      LOG_IIO[i].cpu = 65;
+      LOG_IIO_WR[i].l_tsc = 0;
+      LOG_IIO_WR[i].td_ns = 0;
+      LOG_IIO_WR[i].avg_occ = 0;
+      LOG_IIO_WR[i].s_avg_occ = 0;
+      LOG_IIO_WR[i].cpu = 65;
       i++;
   }
 }
 
-void dump_iio_log(void){
+void dump_iio_wr_log(void){
   int i=0;
-  // printk("index,latest_tsc,time_delta_ns,avg_occ,s_avg_occ,cpu\n");
   while(i<LOG_SIZE){
       printk("IIO:%d,%lld,%lld,%lld,%lld,%d\n",
       i,
-      LOG_IIO[i].l_tsc,
-      LOG_IIO[i].td_ns,
-      LOG_IIO[i].avg_occ,
-      LOG_IIO[i].s_avg_occ,
-      LOG_IIO[i].cpu);
+      LOG_IIO_WR[i].l_tsc,
+      LOG_IIO_WR[i].td_ns,
+      LOG_IIO_WR[i].avg_occ,
+      LOG_IIO_WR[i].s_avg_occ,
+      LOG_IIO_WR[i].cpu);
       i++;
   }
 }
 
 void update_log_mba(int c){
-  // sched_time = ktime_get_ns();
-  // seconds = sched_time / NSEC_PER_SEC;
-  // microseconds = (sched_time % NSEC_PER_SEC) / NSEC_PER_USEC;
-  // nanoseconds = (sched_time % NSEC_PER_SEC);
-  // snprintf(LOG_MBA[log_index_mba % LOG_SIZE].ktime, sizeof(time_str), "%llu.%09lu", seconds, nanoseconds);
 	LOG_MBA[log_index_mba % LOG_SIZE].l_tsc = cur_rdtsc_mba;
 	LOG_MBA[log_index_mba % LOG_SIZE].td_ns = latest_time_delta_mba_ns;
 	LOG_MBA[log_index_mba % LOG_SIZE].cpu = c;
 	LOG_MBA[log_index_mba % LOG_SIZE].mba_val = latest_mba_val;
-	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ = latest_measured_avg_occ;
+	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ = latest_measured_avg_occ_wr;
 	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ_rd = latest_measured_avg_occ_rd;
 	LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw = (smoothed_avg_pcie_bw >> 10);
 	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw = latest_avg_pcie_bw;
@@ -206,7 +196,6 @@ void init_mba_log(void){
 
 void dump_mba_log(void){
   int i=0;
-  // printk("index,latest_tsc,time_delta_ns,cpu,latest_mba_val,latest_measured_avg_occ,avg_pcie_bw,smoothed_avg_pcie_bw\n");
   while(i<LOG_SIZE){
       printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%lld,%x\n",
       i,
@@ -223,7 +212,6 @@ void dump_mba_log(void){
       LOG_MBA[i].avg_rd_mem_bw,
       LOG_MBA[i].avg_wr_mem_bw,
       LOG_MBA[i].task_state);
-      // LOG_MBA[i].ktime);
       i++;
   }
 }

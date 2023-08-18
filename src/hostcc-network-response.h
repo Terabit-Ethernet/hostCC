@@ -18,7 +18,7 @@ enum {
 
 #define NO_ECN_MARKING 0
 extern u64 cur_rdtsc_nf;
-extern u64 latest_measured_avg_occ_nf;
+extern u64 latest_measured_avg_occ_wr_nf;
 extern u64 latest_measured_avg_occ_rd_nf;
 extern u64 latest_time_delta_nf_ns;
 extern u32 latest_datagram_len;
