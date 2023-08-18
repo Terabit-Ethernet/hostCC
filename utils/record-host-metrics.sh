@@ -248,7 +248,7 @@ then
     if [ "$retx" = 1 ]
     then
     echo "Collecting retransmission rate..."
-    dump_netstat.sh $dur > logs/$outdir/retx.log
+    dump_netstat $dur > logs/$outdir/retx.log
     cat logs/$outdir/retx.log | grep -E "segment|TCPLostRetransmit" > retx.out
     python3 print_retx_rate.py retx.out $dur > reports/$outdir/retx.rpt
     fi
