@@ -44,8 +44,8 @@ flame=0
 bw=1
 pcie=1
 membw=1
-iio=1
-pfc=1
+iio=0
+pfc=0
 intf=ens2f0
 
 cur_dir=$PWD
@@ -233,18 +233,17 @@ then
     if [ "$cpu_util" = 1 ]
     then
     echo "Collecting CPU utilization for cores $cores..."
-    sudo bash dump_cpu_util.sh $1 $2 $3 recv
     sar -P $cores 1 1000 > logs/$outdir/cpu_util.log &
     sleep $dur
     sudo pkill -9 -f "sar"
     python3 cpu_util.py logs/$outdir/cpu_util.log > reports/$outdir/cpu_util.rpt
     fi
 
-    if ["$bw" = 1 ]
-    then
-    echo "Collecting app bandwidth..."
-    echo "Avg_iperf_tput: " $(cat logs/$outdir/iperf.bw.log | grep "60.*-90.*" | awk  '{ sum += $7; n++ } END { if (n > 0) printf "%.3f", sum/1000; }') > reports/$outdir/iperf.bw.rpt
-    fi
+    # if ["$bw" = 1 ]
+    # then
+    # echo "Collecting app bandwidth..."
+    # echo "Avg_iperf_tput: " $(cat logs/$outdir/iperf.bw.log | grep "60.*-90.*" | awk  '{ sum += $7; n++ } END { if (n > 0) printf "%.3f", sum/1000; }') > reports/$outdir/iperf.bw.rpt
+    # fi
 
     if [ "$retx" = 1 ]
     then
