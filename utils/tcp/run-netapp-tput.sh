@@ -89,13 +89,8 @@ mkdir -p ../logs/$outdir #Directory to store collected logs
 rm ../logs/$outdir/iperf.bw.log
 
 function collect_stats() {
-  echo "Collecting app throughput for RDMA server..."
-  average_bw=$(awk '/BW average\[Gb\/sec\]/{ getline; print $4 }' "../logs/$outdir/perf.bw.log")
-  echo $average_bw > ../reports/$outdir/perf.bw.rpt
-
-  echo "Collecting cpu util for RDMA server..."
-  cpu_util=$(awk '/CPU_Util\[%\]/{ getline; print $6 }' "../logs/$outdir/perf.bw.log")
-  echo $cpu_util > ../reports/$outdir/cpu_util.rpt
+  echo "Collecting app throughput for TCP server..."
+  echo "Avg_iperf_tput: " $(cat ../logs/$outdir/iperf.bw.log | grep "60.*-90.*" | awk  '{ sum += $7; n++ } END { if (n > 0) printf "%.3f", sum/1000; }') > ../reports/$outdir/iperf.bw.rpt
 }
 
 counter=0
