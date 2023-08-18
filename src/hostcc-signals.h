@@ -12,31 +12,12 @@
 
 
 
-extern struct task_struct *app_pid_task;
-
-static struct sched_param {
-  int sched_priority;
-  int sched_policy;
-};
-
-// extern char *sh_mem;
-extern struct pid *app_pid_struct;
-
 extern u64 last_changed_level_tsc;
 
 // memory bandwidth logging
 extern unsigned int *mmconfig_ptr;         // must be pointer to 32-bit int so compiler will generate 32-bit loads and stores
 extern uint64_t latest_avg_rd_bw;
 extern uint64_t latest_avg_wr_bw;
-
-// kthread scheduling vars
-// void thread_fun_poll_iio(struct work_struct *work);
-// void thread_fun_poll_iio_rd(struct work_struct *work);
-// void thread_fun_poll_mba(struct work_struct* work);
-
-// static struct task_struct *thread_iio;
-// static struct task_struct *thread_iio_rd;
-// static struct task_struct *thread_mba;
 
 extern int target_pid;
 extern int target_pcie_thresh;
@@ -117,8 +98,5 @@ void update_pcie_bw(void);
 void update_imc_bw(void);
 void update_imc_config(void);
 void init_mmconfig(void);
-// void poll_mba_init(void);
-// void poll_mba_exit(void);
-// void thread_fun_poll_mba(struct work_struct *work);
 
 #endif

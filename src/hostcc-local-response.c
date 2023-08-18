@@ -39,89 +39,40 @@ void update_mba_msr_register(void){
 //helper function to send SIGCONT/SIGSTOP signals to processes
 static int send_signal_to_pid(int proc_pid, int signal)
 {
-    // struct task_struct *task;
-
-    // if (proc_pid == -1) {
-    //     pr_err("No target PID specified\n");
-    //     return -EINVAL;
-    // }
-
-    // pid_struct = find_get_pid(proc_pid);
-    // if (!pid_struct) {
-    //     pr_err("Invalid PID: %d\n", proc_pid);
-    //     return -EINVAL;
-    // }
-
-    // task = pid_task(pid_struct, PIDTYPE_PID);
-    // if (!task) {
-    //     pr_err("Failed to find task with PID: %d\n", proc_pid);
-    //     return -EINVAL;
-    // }
-    // send_sig(signal, task, 0);
-
     if(app_pid_struct != NULL){
       rcu_read_lock();
       kill_pid(app_pid_struct, signal, 1);
       rcu_read_unlock();
     }
-    // kill_pid(find_vpid(proc_pid), signal, 1);
-    // if(signal == SIGCONT){
-    //   sprintf(sh_mem, "0003");  
-    // }
-    // else if(signal == SIGSTOP){
-    //   sprintf(sh_mem, "0004");  
-    // }
-
     return 0;
+}
+
+void init_mba_process_scheduler(void){
+    app_pid = target_pid;
+    printk("MLC PID: %ld\n",app_pid);
+    app_pid_task = pid_task(find_get_pid(app_pid), PIDTYPE_PID);
+    app_pid_struct = find_vpid(app_pid);
+    if (app_pid_task == NULL) {
+        printk(KERN_INFO "Cannot find task");
+    }
+    else{
+      printk(KERN_INFO "Found task");
+      struct sched_param param;
+      param.sched_priority = 99;
+      int result = sched_setscheduler(app_pid_task, SCHED_FIFO, &param);
+      if (result == -1) {
+          printk(KERN_ALERT "Failed to set scheduling policy and priority\n");
+      }
+    }
 }
 
 void update_mba_process_scheduler(void){
     WARN_ON(!(latest_mba_val <= 4));
     if(latest_mba_val == 4){
         send_signal_to_pid(app_pid,SIGSTOP);
-        //wait until task is stopped
-        // cur_tsc_sample_pre = rdtscp();
-        // if(app_pid_task != NULL){
-        //   while(app_pid_task->state != TASK_STOPPED){
-        //     ;
-        //   }
-        // }
-        // cur_tsc_sample_post = rdtscp();
-        // extra_time_needed = (cur_tsc_sample_post - cur_tsc_sample_pre) * 10 /33;
-        // printk("Extra time for stop: %ld",extra_time_needed);
-        // if(extra_time_needed < 25000){
-        //   while((rdtscp() - cur_tsc_sample_post) * 10 / 33 < extra_time_needed){
-        //     ;
-        //   }
-        // }
-        // else{
-        //   while((rdtscp() - cur_tsc_sample_post) * 10 / 33 < 25000){
-        //     ;
-        //   }
-        // }
-        // u64 cur_tsc_sample = rdtscp();
-        // while((rdtscp() - cur_tsc_sample) /33 < 5000){
-        //   ;
-        // }
     }
     else{
         send_signal_to_pid(app_pid,SIGCONT);
-        // cur_tsc_sample_pre = rdtscp();
-        // if(app_pid_task != NULL){
-        //   while(app_pid_task->state == TASK_STOPPED){
-        //     ;
-        //   }
-        // }
-        // cur_tsc_sample_post = rdtscp();
-        // extra_time_needed = (cur_tsc_sample_post - cur_tsc_sample_pre) * 10 /33;
-        // printk("Extra time for cont: %ld",extra_time_needed);
-        // while(rdtscp() - cur_tsc_sample_post < extra_time_needed){
-        //   ;
-        // }
-        // u64 cur_tsc_sample = rdtscp();
-        // while((rdtscp() - cur_tsc_sample) /33 < 5000){
-        //   ;
-        // }
     }
 }
 
@@ -214,7 +165,7 @@ void decrease_mba_val(void){
     }
 }
 
-void update_mba_val(void){
+void host_local_response(void){
   if(mode == 0){
     //Rx side logic
     if((smoothed_avg_pcie_bw) < (target_pcie_thresh << 10)){

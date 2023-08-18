@@ -15,10 +15,8 @@ MODULE_LICENSE("GPL");
 
 extern bool terminate_hcc;
 extern bool terminate_hcc_logging;
-extern struct task_struct *app_pid_task;
-extern struct pid *app_pid_struct;
-struct workqueue_struct *poll_iio_queue, *poll_iio_rd_queue, *poll_mba_queue;
-struct work_struct poll_iio, poll_iio_rd, poll_mba;
+struct workqueue_struct *poll_iio_queue, *poll_iio_rd_queue, *poll_pcie_queue;
+struct work_struct poll_iio, poll_iio_rd, poll_pcie;
 
 extern uint64_t smoothed_avg_occ;
 extern uint32_t latest_measured_avg_occ;
@@ -94,30 +92,9 @@ void thread_fun_poll_iio(struct work_struct *work) {
   }
 }
 
-void poll_mba_init(void) {
+void poll_pcie_init(void) {
     #if USE_PROCESS_SCHEDULER
-    app_pid = target_pid;
-    printk("MLC PID: %ld\n",app_pid);
-    app_pid_task = pid_task(find_get_pid(app_pid), PIDTYPE_PID);
-    app_pid_struct = find_vpid(app_pid);
-    if (app_pid_task == NULL) {
-        printk(KERN_INFO "Cannot find task");
-    }
-    else{
-      printk(KERN_INFO "Found task");
-      struct sched_param param;
-      // struct task_struct *current_task = current; // Get the current task
-      // Set the scheduling policy to SCHED_FIFO
-      param.sched_priority = 99;  // Set the priority (99 is highest)
-      // Change the scheduling policy and priority
-      int result = sched_setscheduler(app_pid_task, SCHED_FIFO, &param);
-      if (result == -1) {
-          // Handle the error
-          printk(KERN_ALERT "Failed to set scheduling policy and priority\n");
-          // return -1;
-      }
-    }
-
+    init_mba_process_scheduler();
     init_mmconfig();
     update_imc_config();
     #endif
@@ -126,12 +103,12 @@ void poll_mba_init(void) {
     init_mba_log();
 }
 
-void poll_mba_exit(void) {
+void poll_pcie_exit(void) {
     //dump log info
     printk(KERN_INFO "Ending PCIe Bandwidth Sampling");
-    flush_workqueue(poll_mba_queue);
+    flush_workqueue(poll_pcie_queue);
     flush_scheduled_work();
-    destroy_workqueue(poll_mba_queue);
+    destroy_workqueue(poll_pcie_queue);
     if(latest_mba_val > 0){
         latest_mba_val = 0;
         update_mba_msr_register();
@@ -146,7 +123,7 @@ void poll_mba_exit(void) {
 }
 
 
-void thread_fun_poll_mba(struct work_struct *work) {  
+void thread_fun_poll_pcie(struct work_struct *work) {  
   int cpu = NUMA0_CORE;
   uint32_t budget = WORKER_BUDGET;
   while (budget) {
@@ -158,22 +135,14 @@ void thread_fun_poll_mba(struct work_struct *work) {
     } else{
     latest_measured_avg_occ_rd = smoothed_avg_occ_rd >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
     }
-    update_mba_val();
+    host_local_response();
     if(!terminate_hcc_logging){
       update_log_mba(cpu);
     }
-    // unsigned int min_value = 1;
-    // unsigned int max_value = 10;
-    // unsigned int random_number;
-
-    // // Generate a random integer between min_value and max_value
-    // random_number = get_random_int() % (max_value - min_value + 1) + min_value;
-        // mba_test(random_number * 50,random_number * 50,cpu);
-        // mba_test(500,100,cpu);
     budget--;
   }
   if(!terminate_hcc){
-    queue_work_on(cpu,poll_mba_queue, &poll_mba);
+    queue_work_on(cpu,poll_pcie_queue, &poll_pcie);
   }
   else{
     return;
@@ -182,9 +151,9 @@ void thread_fun_poll_mba(struct work_struct *work) {
 }
 
 static int __init hostcc_init(void) {
-  printk("Started hostcc");
+  printk("Initializing hostcc");
   if(mode == 0){
-    //Start IIO occupancy sampling
+    //Start IIO occupancy measurement
     poll_iio_queue = alloc_workqueue("poll_iio_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
     if (!poll_iio_queue) {
         printk(KERN_ERR "Failed to create IIO workqueue\n");
@@ -194,7 +163,7 @@ static int __init hostcc_init(void) {
     poll_iio_init();
     queue_work_on(CORE_IIO,poll_iio_queue, &poll_iio);
   } else {
-    //Start IIO Rd occupancy sampling
+    //Start IIO Rd occupancy measurement
     poll_iio_rd_queue = alloc_workqueue("poll_iio_rd_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
     if (!poll_iio_rd_queue) {
         printk(KERN_ERR "Failed to create IIO Rd workqueue\n");
@@ -205,15 +174,15 @@ static int __init hostcc_init(void) {
     queue_work_on(CORE_IIO_RD,poll_iio_rd_queue, &poll_iio_rd);
   }
 
-  //Start MBA allocation
-  poll_mba_queue = alloc_workqueue("poll_mba_queue", WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
-  if (!poll_mba_queue) {
-      printk(KERN_ERR "Failed to create MBA workqueue\n");
+  //Start PCIe bandwidth measurement
+  poll_pcie_queue = alloc_workqueue("poll_pcie_queue", WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
+  if (!poll_pcie_queue) {
+      printk(KERN_ERR "Failed to create PCIe workqueue\n");
       return -ENOMEM;
   }
-  INIT_WORK(&poll_mba, thread_fun_poll_mba);
-  poll_mba_init();
-  queue_work_on(NUMA0_CORE,poll_mba_queue, &poll_mba);
+  INIT_WORK(&poll_pcie, thread_fun_poll_pcie);
+  poll_pcie_init();
+  queue_work_on(NUMA0_CORE,poll_pcie_queue, &poll_pcie);
 
   //Start ECN marking
   nf_init();
@@ -231,7 +200,7 @@ static void __exit hostcc_exit(void) {
   } else {
   poll_iio_rd_exit();
   }
-  poll_mba_exit();
+  poll_pcie_exit();
 }
 
 module_init(hostcc_init);

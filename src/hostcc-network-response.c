@@ -66,15 +66,6 @@ unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct
       update_log_nf(cpu);
     }
     #if !(NO_ECN_MARKING)
-    // unsigned int min_value = 0;
-    // unsigned int max_value = 100;
-    // unsigned int random_number;
-
-    // // Generate a random integer between min_value and max_value
-    // random_number = get_random_int() % (max_value - min_value + 1) + min_value;
-        // mba_test(random_number * 50,random_number * 50,cpu);
-        // mba_test(500,100,cpu);
-    // if(random_number > 90){
     if(latest_measured_avg_occ_nf > target_iio_thresh){
         iph->tos = iph->tos | 0x03;
         iph->check = 0;
@@ -92,7 +83,6 @@ unsigned int nf_markecn_handler_tx(void *priv, struct sk_buff *skb, const struct
 {
   struct net_device *outdev = state->out;
   const char* interfaceName = outdev->name;
-  // printk("Interface Name: %s\n", interfaceName);
   if(strcmp(interfaceName,"ens2f1") != 0){
     return NF_ACCEPT;
   }
