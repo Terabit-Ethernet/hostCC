@@ -1,8 +1,8 @@
 #include "hostcc.h"
 #include "hostcc-signals.h"
 #include "hostcc-local-response.h"
-// #include "hostcc-network-response.h"
-// #include "hostcc-logging.h"
+#include "hostcc-network-response.h"
+#include "hostcc-logging.h"
 
 module_param(target_pid, int, 0);
 module_param(target_pcie_thresh, int, 0);
@@ -19,6 +19,10 @@ extern struct task_struct *app_pid_task;
 extern struct pid *app_pid_struct;
 struct workqueue_struct *poll_iio_queue, *poll_iio_rd_queue, *poll_mba_queue;
 struct work_struct poll_iio, poll_iio_rd, poll_mba;
+
+extern uint64_t smoothed_avg_occ;
+extern uint32_t latest_measured_avg_occ;
+extern int mode;
 
 void poll_iio_rd_init(void){
   //initialize the log
@@ -177,7 +181,8 @@ void thread_fun_poll_mba(struct work_struct *work) {
   
 }
 
-static int __init hcc_init(void) {
+static int __init hostcc_init(void) {
+  printk("Started hostcc");
   if(mode == 0){
     //Start IIO occupancy sampling
     poll_iio_queue = alloc_workqueue("poll_iio_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
@@ -216,7 +221,7 @@ static int __init hcc_init(void) {
   return 0;
 }
 
-static void __exit hcc_exit(void) {
+static void __exit hostcc_exit(void) {
   terminate_hcc_logging = true;
   msleep(5000);
   terminate_hcc = true;
@@ -229,5 +234,5 @@ static void __exit hcc_exit(void) {
   poll_mba_exit();
 }
 
-module_init(hcc_init);
-module_exit(hcc_exit);
+module_init(hostcc_init);
+module_exit(hostcc_exit);

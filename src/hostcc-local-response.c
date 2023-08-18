@@ -22,6 +22,10 @@ extern int target_iio_thresh;
 extern int target_iio_rd_thresh;
 extern u64 last_changed_level_tsc;
 
+u64 extra_time_needed;
+u64 cur_tsc_sample_pre;
+u64 cur_tsc_sample_post;
+
 
 void update_mba_msr_register(void){
   uint32_t low = 0;

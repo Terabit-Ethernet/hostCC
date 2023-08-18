@@ -2,9 +2,77 @@
 #include "hostcc-signals.h"
 #include "hostcc-logging.h"
 #include "hostcc-local-response.h"
+#include "SKX_IMC_BDF_Offset.h"
 
 extern bool terminate_hcc = false;
 extern bool terminate_hcc_logging = false;
+
+u64 last_changed_level_tsc = 0;
+uint64_t latest_avg_rd_bw = 0;
+uint64_t latest_avg_wr_bw = 0;
+
+int target_pid = 0;
+int target_pcie_thresh = 84;
+int target_iio_thresh = 70;
+int target_iio_rd_thresh = 190;
+int mode = 0; //mode = 0 => Rx; mode = 1 => Tx
+
+uint64_t cur_rdtsc_iio_rd = 0;
+
+uint64_t latest_avg_occ_rd = 0;
+uint64_t smoothed_avg_occ_rd = 0;
+uint64_t latest_time_delta_iio_rd_ns = 0;
+
+uint64_t cur_rdtsc_iio = 0;
+uint64_t latest_avg_occ = 0;
+uint64_t smoothed_avg_occ;
+uint64_t latest_time_delta_iio_ns = 0;
+
+uint64_t cur_rdtsc_mba = 0;
+
+uint32_t latest_mba_val = 0;
+uint64_t latest_time_delta_mba_ns = 0;
+uint32_t latest_measured_avg_occ = 0;
+uint32_t latest_measured_avg_occ_rd = 0;
+uint32_t latest_avg_pcie_bw = 0;
+uint32_t smoothed_avg_pcie_bw = 0;
+
+
+uint32_t latest_avg_pcie_bw_rd = 0;
+uint32_t smoothed_avg_pcie_bw_rd = 0;
+
+uint32_t app_pid = 0;
+uint64_t last_reduced_tsc = 0;
+
+uint64_t prev_rdtsc_mba = 0;
+uint64_t tsc_sample_mba = 0;
+uint64_t cur_cum_frc = 0;
+uint64_t prev_cum_frc = 0;
+uint64_t cum_frc_sample = 0;
+uint64_t cur_cum_frc_rd = 0;
+uint64_t prev_cum_frc_rd = 0;
+uint64_t cum_frc_rd_sample = 0;
+uint64_t prev_rdtsc_iio = 0;
+uint64_t prev_cum_occ = 0;
+uint64_t cur_cum_occ = 0;
+uint64_t tsc_sample_iio = 0;
+uint64_t cum_occ_sample = 0;
+uint64_t cum_occ_sample_rd;
+uint64_t prev_cum_occ_rd;
+uint64_t cur_cum_occ_rd;
+uint64_t prev_rdtsc_iio_rd = 0;
+uint64_t tsc_sample_iio_rd = 0;
+
+uint64_t imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
+uint64_t prev_imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
+uint64_t cur_imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
+
+u64 sched_time;
+
+struct timespec64 curr_time;
+char time_str[32];
+
+unsigned int *mmconfig_ptr = NULL;
 
 // IIO Read occupancy logic (obtained via CHA counters)
 void update_iio_rd_occ_ctl_reg(void){

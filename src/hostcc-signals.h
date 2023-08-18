@@ -9,14 +9,10 @@
 #include <linux/delay.h>
 #include <linux/signal.h>
 #include <linux/sched/signal.h>
-#include "SKX_IMC_BDF_Offset.h"
 
 
 
 extern struct task_struct *app_pid_task;
-u64 cur_tsc_sample_pre;
-u64 cur_tsc_sample_post;
-u64 extra_time_needed;
 
 static struct sched_param {
   int sched_priority;
@@ -25,19 +21,13 @@ static struct sched_param {
 
 // extern char *sh_mem;
 extern struct pid *app_pid_struct;
-struct timespec64 curr_time;
-char time_str[32];
-u64 sched_time;
 
-extern u64 last_changed_level_tsc = 0;
+extern u64 last_changed_level_tsc;
 
 // memory bandwidth logging
-unsigned int *mmconfig_ptr;         // must be pointer to 32-bit int so compiler will generate 32-bit loads and stores
-uint64_t imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
-uint64_t prev_imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
-uint64_t cur_imc_counts[NUM_IMC_CHANNELS][NUM_IMC_COUNTERS];
-extern uint64_t latest_avg_rd_bw = 0;
-extern uint64_t latest_avg_wr_bw = 0;
+extern unsigned int *mmconfig_ptr;         // must be pointer to 32-bit int so compiler will generate 32-bit loads and stores
+extern uint64_t latest_avg_rd_bw;
+extern uint64_t latest_avg_wr_bw;
 
 // kthread scheduling vars
 // void thread_fun_poll_iio(struct work_struct *work);
@@ -48,26 +38,23 @@ extern uint64_t latest_avg_wr_bw = 0;
 // static struct task_struct *thread_iio_rd;
 // static struct task_struct *thread_mba;
 
-extern int target_pid = 0;
-extern int target_pcie_thresh = 84;
-extern int target_iio_thresh = 70;
-extern int target_iio_rd_thresh = 190;
-extern int mode = 0; //mode = 0 => Rx; mode = 1 => Tx
+extern int target_pid;
+extern int target_pcie_thresh;
+extern int target_iio_thresh;
+extern int target_iio_rd_thresh;
+extern int mode; //mode = 0 => Rx; mode = 1 => Tx
 
 // IIO Rd occupancy related vars
 #define IIO_MSR_PMON_CTL_BASE 0x0A48L
 #define IIO_MSR_PMON_CTR_BASE 0x0A41L
 #define IIO_OCC_VAL 0x00004000004001D5
 #define CORE_IIO_RD 24
-uint64_t cum_occ_sample_rd;
-uint64_t prev_cum_occ_rd;
-uint64_t cur_cum_occ_rd;
-uint64_t prev_rdtsc_iio_rd = 0;
-extern uint64_t cur_rdtsc_iio_rd = 0;
-uint64_t tsc_sample_iio_rd = 0;
-extern uint64_t latest_avg_occ_rd = 0;
-extern uint64_t smoothed_avg_occ_rd = 0;
-extern uint64_t latest_time_delta_iio_rd_ns = 0;
+
+extern uint64_t cur_rdtsc_iio_rd;
+
+extern uint64_t latest_avg_occ_rd;
+extern uint64_t smoothed_avg_occ_rd;
+extern uint64_t latest_time_delta_iio_rd_ns;
 
 // IIO occupancy related vars
 #define IRP_MSR_PMON_CTL_BASE 0x0A5BL
@@ -76,15 +63,12 @@ extern uint64_t latest_time_delta_iio_rd_ns = 0;
 #define STACK 2 //We're concerned with stack #2 on our machine
 #define CORE_IIO 24
 #define IIO_COUNTER_OFFSET 0
-uint64_t prev_rdtsc_iio = 0;
-extern uint64_t cur_rdtsc_iio = 0;
-uint64_t prev_cum_occ = 0;
-uint64_t cur_cum_occ = 0;
-uint64_t tsc_sample_iio = 0;
-uint64_t cum_occ_sample = 0;
-extern uint64_t latest_avg_occ = 0;
-extern uint64_t smoothed_avg_occ = 0;
-extern uint64_t latest_time_delta_iio_ns = 0;
+
+extern uint64_t cur_rdtsc_iio;
+
+extern uint64_t latest_avg_occ;
+extern uint64_t smoothed_avg_occ;
+extern uint64_t latest_time_delta_iio_ns;
 
 // PCIe bandwidth and MBA update related vars
 
@@ -92,25 +76,21 @@ extern uint64_t latest_time_delta_iio_ns = 0;
 #define IIO_PCIE_1_PORT_0_BW_OUT 0x0B24 //We're concerned with PCIe 1 stack on our machine (Table 1-11 in Intel Skylake Manual)
 
 
-uint64_t prev_rdtsc_mba = 0;
-extern uint64_t cur_rdtsc_mba = 0;
-uint64_t tsc_sample_mba = 0;
-extern uint32_t latest_mba_val = 0;
-extern uint64_t latest_time_delta_mba_ns = 0;
-extern uint32_t latest_measured_avg_occ = 0;
-extern uint32_t latest_measured_avg_occ_rd = 0;
-extern uint32_t latest_avg_pcie_bw = 0;
-extern uint32_t smoothed_avg_pcie_bw = 0;
-uint64_t cur_cum_frc = 0;
-uint64_t prev_cum_frc = 0;
-uint64_t cum_frc_sample = 0;
-extern uint32_t latest_avg_pcie_bw_rd = 0;
-extern uint32_t smoothed_avg_pcie_bw_rd = 0;
-uint64_t cur_cum_frc_rd = 0;
-uint64_t prev_cum_frc_rd = 0;
-uint64_t cum_frc_rd_sample = 0;
-extern uint32_t app_pid = 0;
-extern uint64_t last_reduced_tsc = 0;
+
+extern uint64_t cur_rdtsc_mba;
+
+extern uint32_t latest_mba_val;
+extern uint64_t latest_time_delta_mba_ns;
+extern uint32_t latest_measured_avg_occ;
+extern uint32_t latest_measured_avg_occ_rd;
+extern uint32_t latest_avg_pcie_bw;
+extern uint32_t smoothed_avg_pcie_bw;
+
+extern uint32_t latest_avg_pcie_bw_rd;
+extern uint32_t smoothed_avg_pcie_bw_rd;
+
+extern uint32_t app_pid;
+extern uint64_t last_reduced_tsc;
 
 void update_iio_rd_occ_ctl_reg(void);
 void sample_iio_rd_occ_counter(int c);

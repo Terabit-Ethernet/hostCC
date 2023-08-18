@@ -13,8 +13,20 @@ extern int target_iio_rd_thresh;
 extern uint64_t smoothed_avg_occ_rd;
 extern uint64_t smoothed_avg_occ;
 
+DEFINE_SPINLOCK(etx_spinlock_rx);
+DEFINE_SPINLOCK(etx_spinlock_tx);
+
+u64 latest_measured_avg_occ_nf = 0;
+u64 latest_measured_avg_occ_rd_nf = 0;
+u64 latest_time_delta_nf_ns = 0;
+u32 latest_datagram_len = 0;
+
+u64 tsc_sample_nf = 0;
+u64 cur_rdtsc_nf = 0;
+u64 prev_rdtsc_nf = 0;
+
 //Netfilter logic to mark ECN bits
-static void sample_counters_nf(int c){
+void sample_counters_nf(int c){
   if(mode == 0){
     latest_measured_avg_occ_nf = smoothed_avg_occ >> 10;
   }
@@ -30,7 +42,7 @@ static void sample_counters_nf(int c){
 	return;
 }
 
-static unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
+unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
    struct net_device *indev = state->in;
    const char* interfaceName = indev->name;
@@ -76,7 +88,7 @@ static unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const
   return NF_ACCEPT;
 }
 
-static unsigned int nf_markecn_handler_tx(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
+unsigned int nf_markecn_handler_tx(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
   struct net_device *outdev = state->out;
   const char* interfaceName = outdev->name;
@@ -113,7 +125,7 @@ static unsigned int nf_markecn_handler_tx(void *priv, struct sk_buff *skb, const
   return NF_ACCEPT;
 }
 
-static int nf_init(void) {
+int nf_init(void) {
   if(mode == 0){
     // Pre-routing hook for Rx datapath
     nf_markecn_ops_rx = (struct nf_hook_ops*)kcalloc(1, sizeof(struct nf_hook_ops), GFP_KERNEL);
@@ -140,7 +152,7 @@ static int nf_init(void) {
 	return 0;
 }
 
-static void nf_exit(void) {
+void nf_exit(void) {
   if(mode == 0){
     if (nf_markecn_ops_rx  != NULL) {
       nf_unregister_net_hook(&init_net, nf_markecn_ops_rx);
