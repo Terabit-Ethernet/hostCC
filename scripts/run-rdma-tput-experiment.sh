@@ -62,6 +62,9 @@ echo -n "Enter SSH Address for client:"
 read addr
 echo -n "Enter SSH Password for client:"
 read -s password
+# uname=abc
+# addr=xyz.edu
+# password=****
 
 
 while :
@@ -194,13 +197,13 @@ cd -
 
 echo "starting server instances..."
 cd $exp_dir
-sudo bash run-netapp-tput.sh -m server -d $server_dev -t $txn -D $(($dur * 5)) -o $exp-RUN-$j &
+sudo bash run-netapp-tput.sh -m server -d $server_dev -t $txn -D $(($dur * 5)) -o $exp-RUN-$j -s $size -M $mtu &
 sleep 2
 cd -
 
 #### setup and start clients
 echo "setting up and starting clients..."
-sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' -f 1 -r 1 -p 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -d '$client_dev' -t '$txn' -D '$(($dur * 5))' -o '$exp'-RUN-'$j'; exec bash"'
+sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' -f 1 -r 1 -p 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -d '$client_dev' -t '$txn' -D '$(($dur * 5))' -o '$exp'-RUN-'$j' -s '$size' -M '$mtu'; exec bash"'
 
 
 #### warmup
@@ -239,13 +242,13 @@ else
 
     echo "starting server instances..."
     cd $exp_dir
-    sudo bash run-netapp-tput.sh -m server -d $server_dev -t $txn -D $(($dur * 5)) -o $exp-MLCRUN-$j &
+    sudo bash run-netapp-tput.sh -m server -d $server_dev -t $txn -D $(($dur * 5)) -o $exp-MLCRUN-$j -s $size -M $mtu &
     sleep 2
     cd -
 
     #### setup and start clients
     echo "setting up and starting clients..."
-    sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' -f 1 -r 1 -p 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -d '$client_dev' -t '$txn' -D '$(($dur * 5))' -o '$exp'-MLCRUN-'$j'; exec bash"'
+    sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' -f 1 -r 1 -p 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -d '$client_dev' -t '$txn' -D '$(($dur * 5))' -o '$exp'-MLCRUN-'$j' -s '$size' -M '$mtu'; exec bash"'
 
     #### start MLC
     echo "starting MLC..."
@@ -261,7 +264,7 @@ else
 fi
 
 #collect info from all runs
-if [ "$MLC_CORES" = "none" ]; then
+if [ "$mlc_cores" = "none" ]; then
     sudo python3 collect-rdma-tput-stats.py $exp $num_runs 0
 else
     sudo python3 collect-rdma-tput-stats.py $exp $num_runs 1
