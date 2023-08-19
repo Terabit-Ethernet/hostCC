@@ -297,6 +297,7 @@ if [ "$membw" = 1 ]
 then
     echo "Collecting Memory bandwidth..."
     dump_membw > logs/$outdir/membw.log &
+    sleep 30
     sleep $dur
     sudo pkill -9 -f "pcm"
     parse_membw
