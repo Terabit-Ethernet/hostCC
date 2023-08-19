@@ -85,11 +85,9 @@ rm netserver.log
 counter=0
 if [ "$mode" = "netserver" ]
 then
-    sudo pkill -9 -f netserver #kill existing netperf session
     taskset -c $core netserver -p $port -D f
 elif [ "$mode" = "netperf" ]
 then
-    sudo pkill -9 -f netperf #kill existing netperf session
     taskset -c $core netperf -H $addr -t TCP_RR -l $dur -p $port -j MIN_LATENCY -f g -- -r $size,$size -o throughput > ../reports/$outdir/netperf.tput.rpt
     sleep 2
     cp netserver.log ../logs/$outdir/netperf.lat.log
