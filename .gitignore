@@ -8,3 +8,4 @@
 utils/logs/*
 utils/reports/*
 *.log
+*/collect_iio_occ
