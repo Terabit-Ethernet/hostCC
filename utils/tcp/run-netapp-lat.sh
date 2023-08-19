@@ -46,6 +46,10 @@ do
       outdir="$2"
       shift 2
       ;;
+    -s | --size )
+      size="$2"
+      shift 2
+      ;;
     -p | --port )
       port="$2"
       shift 2
@@ -91,7 +95,7 @@ then
     taskset -c $core netperf -H $addr -t TCP_RR -l $dur -p $port -j MIN_LATENCY -f g -- -r $size,$size -o throughput > ../reports/$outdir/netperf.tput.rpt
     sleep 2
     cp netserver.log ../logs/$outdir/netperf.lat.log
-    python3 ../print_netperf_latency_stats.py ../logs/$outdir/netperf.lat.log > ../reports/$outdir/netperf.lat.rpt
+    python3 ../print_netperf_lat_stats.py ../logs/$outdir/netperf.lat.log > ../reports/$outdir/netperf.lat.rpt
 else
     echo "incorrect argument specified"
     help
