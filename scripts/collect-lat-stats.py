@@ -28,7 +28,7 @@ for rpc in RPC_SIZES:
     p999_latencies[rpc] = []
     p9999_latencies[rpc] = []
     for i in range(NUM_RUNS):
-        with open(FILE_NAME + '-LATRUN-' + str(i) + '/netperf/' + str(rpc) + '.lat.rpt') as f1:
+        with open(FILE_NAME + '-LATRUN-' + str(i) + '/netperf-' + str(rpc) + '.lat.rpt') as f1:
             for line in f1:
                 if line.startswith('50%'):
                     lat = float(line.split()[-1])
