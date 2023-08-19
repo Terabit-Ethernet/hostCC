@@ -92,10 +92,10 @@ then
     taskset -c $core netserver -p $port -D f
 elif [ "$mode" = "netperf" ]
 then
-    taskset -c $core netperf -H $addr -t TCP_RR -l $dur -p $port -j MIN_LATENCY -f g -- -r $size,$size -o throughput > ../reports/$outdir/netperf.tput.rpt
+    taskset -c $core netperf -H $addr -t TCP_RR -l $dur -p $port -j MIN_LATENCY -f g -- -r $size,$size -o throughput > ../reports/$outdir/netperf-$size.tput.rpt
     sleep 2
-    cp netserver.log ../logs/$outdir/netperf.lat.log
-    python3 ../print_netperf_lat_stats.py ../logs/$outdir/netperf.lat.log > ../reports/$outdir/netperf.lat.rpt
+    cp netserver.log ../logs/$outdir/netperf-$size.lat.log
+    python3 ../print_netperf_lat_stats.py ../logs/$outdir/netperf-$size.lat.log > ../reports/$outdir/netperf-$size.lat.rpt
 else
     echo "incorrect argument specified"
     help
