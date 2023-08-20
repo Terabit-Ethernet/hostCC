@@ -11,7 +11,6 @@
 
 extern uint64_t smoothed_avg_occ_rd;
 extern uint64_t smoothed_avg_occ_wr;
-
 extern u64 cur_rdtsc_nf;
 extern u64 latest_time_delta_nf_ns;
 extern u32 latest_datagram_len;
@@ -23,7 +22,6 @@ extern uint64_t latest_avg_occ_rd;
 extern uint64_t cur_rdtsc_iio_rd;
 extern uint64_t latest_avg_occ_wr;
 extern uint64_t latest_time_delta_iio_wr_ns;
-
 extern uint64_t cur_rdtsc_mba;
 extern uint64_t latest_time_delta_mba_ns;
 extern uint32_t latest_measured_avg_occ_wr;
@@ -31,14 +29,9 @@ extern uint32_t latest_measured_avg_occ_rd;
 extern uint32_t latest_mba_val;
 extern uint32_t smoothed_avg_pcie_bw;
 extern uint32_t latest_avg_pcie_bw;
-
-extern uint64_t latest_avg_rd_bw;
-extern uint64_t latest_avg_wr_bw;
 extern uint32_t smoothed_avg_pcie_bw_rd;
 extern uint32_t latest_avg_pcie_bw_rd;
-
 extern struct task_struct *app_pid_task;
-
 struct log_entry_iio_wr LOG_IIO_WR[LOG_SIZE];
 struct log_entry_iio_rd LOG_IIO_RD[LOG_SIZE];
 struct log_entry_mba LOG_MBA[LOG_SIZE];
@@ -47,6 +40,10 @@ uint32_t log_index_iio_wr = 0;
 uint32_t log_index_iio_rd = 0;
 uint32_t log_index_mba = 0;
 uint32_t log_index_nf = 0;
+
+unsigned long long seconds;
+unsigned long microseconds;
+unsigned long nanoseconds;
 
 void update_log_nf(int c){
 	LOG_NF[log_index_nf % LOG_SIZE].l_tsc = cur_rdtsc_nf;
@@ -57,9 +54,6 @@ void update_log_nf(int c){
 	log_index_nf++;
 }
 
-unsigned long long seconds;
-unsigned long microseconds;
-unsigned long nanoseconds;
 
 void init_nf_log(void){
   int i=0;
@@ -168,8 +162,6 @@ void update_log_mba(int c){
 	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw = latest_avg_pcie_bw;
   LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw_rd = (smoothed_avg_pcie_bw_rd >> 10);
 	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw_rd = latest_avg_pcie_bw_rd;
-	LOG_MBA[log_index_mba % LOG_SIZE].avg_rd_mem_bw = latest_avg_rd_bw;
-	LOG_MBA[log_index_mba % LOG_SIZE].avg_wr_mem_bw = latest_avg_wr_bw;
   if(app_pid_task != NULL){
 	  LOG_MBA[log_index_mba % LOG_SIZE].task_state = app_pid_task->state;
   }
@@ -187,8 +179,6 @@ void init_mba_log(void){
       LOG_MBA[i].m_avg_occ_rd = 0;
       LOG_MBA[i].avg_pcie_bw = 0;
       LOG_MBA[i].s_avg_pcie_bw = 0;
-      LOG_MBA[i].avg_rd_mem_bw = 0;
-      LOG_MBA[i].avg_wr_mem_bw = 0;
       LOG_MBA[i].task_state = 0xFFFF;
       i++;
   }
@@ -209,8 +199,6 @@ void dump_mba_log(void){
       LOG_MBA[i].m_avg_occ_rd,
       LOG_MBA[i].avg_pcie_bw_rd,
       LOG_MBA[i].s_avg_pcie_bw_rd,
-      LOG_MBA[i].avg_rd_mem_bw,
-      LOG_MBA[i].avg_wr_mem_bw,
       LOG_MBA[i].task_state);
       i++;
   }

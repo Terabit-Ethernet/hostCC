@@ -46,7 +46,7 @@ unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct
 {
    struct net_device *indev = state->in;
    const char* interfaceName = indev->name;
-   if(strcmp(interfaceName,"ens2f1") != 0){
+   if(strcmp(interfaceName,NIC_INTERFACE) != 0){
     return NF_ACCEPT;
   }
 	if (!skb) {
@@ -83,7 +83,7 @@ unsigned int nf_markecn_handler_tx(void *priv, struct sk_buff *skb, const struct
 {
   struct net_device *outdev = state->out;
   const char* interfaceName = outdev->name;
-  if(strcmp(interfaceName,"ens2f1") != 0){
+  if(strcmp(interfaceName,NIC_INTERFACE) != 0){
     return NF_ACCEPT;
   }
 	if (!skb) {
@@ -156,5 +156,7 @@ void nf_exit(void) {
     }
   }
   printk(KERN_INFO "Ending ECN Marking");
-  // dump_nf_log();
+  if(ECN_LOGGING){
+    dump_nf_log();
+  }
 }

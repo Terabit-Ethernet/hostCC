@@ -10,7 +10,7 @@ module_param(target_iio_wr_thresh, int, 0);
 module_param(target_iio_rd_thresh, int, 0);
 module_param(mode, int, 0);
 MODULE_PARM_DESC(target_pid, "Target process ID");
-MODULE_PARM_DESC(mode, "Mode of operation (Rx: 0, or Tx: 1) -- needed for proper host resource allocation");
+MODULE_PARM_DESC(mode, "Mode of operation (Rx: 0, or Tx: 1)");
 MODULE_LICENSE("GPL");
 
 extern bool terminate_hcc;
@@ -21,7 +21,7 @@ extern int mode;
 
 void poll_iio_init(void) {
     //initialize the log
-    printk(KERN_INFO "Starting IIO Sampling");
+    printk(KERN_INFO "Starting IIO Occupancy measurement");
     if(mode == 0){
       init_iio_wr_log();
       update_iio_wr_occ_ctl_reg();
@@ -34,33 +34,37 @@ void poll_iio_init(void) {
 
 void poll_iio_exit(void) {
     //dump log info
-    printk(KERN_INFO "Ending IIO Sampling");
+    printk(KERN_INFO "Ending IIO Occupancy measurement");
     flush_workqueue(poll_iio_queue);
     flush_scheduled_work();
     destroy_workqueue(poll_iio_queue);
     if(mode == 0){
-      //dump_iio_wr_log();
+      if(IIO_LOGGING){
+        dump_iio_wr_log();
+      }
     }
     else{
-      //dump_iio_rd_log();
+      if(IIO_LOGGING){
+        dump_iio_rd_log();
+      }
     }
 }
 
 void thread_fun_poll_iio(struct work_struct *work) {
-  int cpu = CORE_IIO;
+  int cpu = IIO_CORE;
   uint32_t budget = WORKER_BUDGET;
   while (budget) {
     if(mode == 0){
       sample_counters_iio_wr(cpu); //sample counters
       update_iio_wr_occ();         //update occupancy value
-      if(!terminate_hcc_logging){
+      if(!terminate_hcc_logging && IIO_LOGGING){
         update_log_iio_wr(cpu);      //update the log
       }
     }
     else{
       sample_counters_iio_rd(cpu); //sample counters
       update_iio_rd_occ();         //update occupancy value
-      if(!terminate_hcc_logging){
+      if(!terminate_hcc_logging && IIO_LOGGING){
         update_log_iio_rd(cpu);      //update the log
       }
     }
@@ -77,17 +81,15 @@ void thread_fun_poll_iio(struct work_struct *work) {
 void poll_pcie_init(void) {
     #if USE_PROCESS_SCHEDULER
     init_mba_process_scheduler();
-    init_mmconfig();
-    update_imc_config();
     #endif
     //initialize the log
-    printk(KERN_INFO "Starting PCIe Bandwidth Sampling");
+    printk(KERN_INFO "Starting PCIe Bandwidth Measurement");
     init_mba_log();
 }
 
 void poll_pcie_exit(void) {
     //dump log info
-    printk(KERN_INFO "Ending PCIe Bandwidth Sampling");
+    printk(KERN_INFO "Ending PCIe Bandwidth Measurement");
     flush_workqueue(poll_pcie_queue);
     flush_scheduled_work();
     destroy_workqueue(poll_pcie_queue);
@@ -98,27 +100,25 @@ void poll_pcie_exit(void) {
         update_mba_process_scheduler();
         #endif
     }
-    dump_mba_log();
-    if(mmconfig_ptr){
-      iounmap(mmconfig_ptr);
+    if(PCIE_LOGGING){
+      dump_mba_log();
     }
 }
 
 
 void thread_fun_poll_pcie(struct work_struct *work) {  
-  int cpu = NUMA0_CORE;
+  int cpu = PCIE_CORE;
   uint32_t budget = WORKER_BUDGET;
   while (budget) {
     sample_counters_pcie_bw(cpu);
     update_pcie_bw();
-    // update_imc_bw();
     if(mode == 0){
     latest_measured_avg_occ_wr = smoothed_avg_occ_wr >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
     } else{
     latest_measured_avg_occ_rd = smoothed_avg_occ_rd >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
     }
     host_local_response();
-    if(!terminate_hcc_logging){
+    if(!terminate_hcc_logging && PCIE_LOGGING){
       update_log_mba(cpu);
     }
     budget--;
@@ -142,7 +142,7 @@ static int __init hostcc_init(void) {
   }
   INIT_WORK(&poll_iio, thread_fun_poll_iio);
   poll_iio_init();
-  queue_work_on(CORE_IIO,poll_iio_queue, &poll_iio);
+  queue_work_on(IIO_CORE,poll_iio_queue, &poll_iio);
 
   //Start PCIe bandwidth measurement
   poll_pcie_queue = alloc_workqueue("poll_pcie_queue", WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
@@ -152,7 +152,7 @@ static int __init hostcc_init(void) {
   }
   INIT_WORK(&poll_pcie, thread_fun_poll_pcie);
   poll_pcie_init();
-  queue_work_on(NUMA0_CORE,poll_pcie_queue, &poll_pcie);
+  queue_work_on(PCIE_CORE,poll_pcie_queue, &poll_pcie);
 
   //Start ECN marking
   nf_init();

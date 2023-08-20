@@ -178,11 +178,11 @@ function start_hostcc() {
     cd $hostcc_dir
     make
     if [ "$mlc_cores" = "none" ]; then
-        sudo insmod hostcc-module.ko target_pcie_thresh=$target_pcie_thresh target_iio_thresh=$target_iio_thresh
+        sudo insmod hostcc-module.ko target_pcie_thresh=$target_pcie_thresh target_iio_wr_thresh=$target_iio_thresh
     else
         target_pid=$(pidof mlc)
-        echo "sudo insmod hostcc-module.ko target_pid=$target_pid target_pcie_thresh=$target_pcie_thresh target_iio_thresh=$target_iio_thresh"
-        sudo insmod hostcc-module.ko target_pid=$target_pid target_pcie_thresh=$target_pcie_thresh target_iio_thresh=$target_iio_thresh
+        echo "sudo insmod hostcc-module.ko target_pid=$target_pid target_pcie_thresh=$target_pcie_thresh target_iio_wr_thresh=$target_iio_thresh"
+        sudo insmod hostcc-module.ko target_pid=$target_pid target_pcie_thresh=$target_pcie_thresh target_iio_wr_thresh=$target_iio_thresh
     fi
     sleep 10 #give time for hostcc module to load 
     cd -

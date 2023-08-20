@@ -1,0 +1,20 @@
+{
+    "NIC_INTERFACE": "ens2f1",
+    "NIC_LOCAL_SOCKET": 0,
+    "NIC_IIO_STACK": 2,
+    "MBA_LEVEL_1_CORE": 29,
+    "MBA_LEVEL_2_CORE": 30,
+    "MBA_LEVEL_3_CORE": 31,
+    "MBA_VAL_HIGH": 90,
+    "MBA_VAL_LOW": 0,
+    "MBA_COS_ID": 1,
+    "USE_PROCESS_SCHEDULER": 1,
+    "IIO_CORE": 24,
+    "IIO_LOGGING": 0,
+    "PCIE_CORE": 28,
+    "PCIE_LOGGING": 1,
+    "ECN_LOGGING": 0,
+    "LOG_SIZE": 10000
+}
+
+

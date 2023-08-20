@@ -23,6 +23,8 @@
 #include <linux/uaccess.h>
 #include <asm/io.h>
 #include <linux/random.h>
+#include "vars.h"
+#include "intel-cascadelake-params.h"
 
 static inline __attribute__((always_inline)) unsigned long rdtscp(void)
 {
@@ -32,11 +34,6 @@ static inline __attribute__((always_inline)) unsigned long rdtscp(void)
 
    return (a | (d << 32));
 }
-
-#define NUMA0_CORE 28
-#define NUMA1_CORE 29
-#define NUMA2_CORE 30
-#define NUMA3_CORE 31
 
 #endif
 

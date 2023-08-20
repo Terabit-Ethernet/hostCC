@@ -1,7 +1,8 @@
 #ifndef HOSTCC_LOGGING_H
 #define HOSTCC_LOGGING_H
 
-// logging vars
+#include "hostcc.h"
+
 struct log_entry_iio_rd{
 	uint64_t l_tsc; //latest TSC
 	uint64_t td_ns; //latest measured time delta in us
@@ -30,8 +31,6 @@ struct log_entry_mba{
 	uint32_t m_avg_occ_rd; //latest measured avg IIO Rd occupancy
 	uint32_t s_avg_pcie_bw_rd; //smoothed average PCIe Rd bandwidth
 	uint32_t avg_pcie_bw_rd;  //latest PCIe Rd bandwidth sample
-	uint32_t avg_rd_mem_bw;  //Rd memory bandwidth
-	uint32_t avg_wr_mem_bw;  //Wr memory bandwidth
 	uint32_t task_state;
 };
 
@@ -42,8 +41,6 @@ struct log_entry_nf{
 	int cpu; //current cpu
 	uint32_t dat_len; //IP datagram length at last sample
 };
-
-#define LOG_SIZE 500000
 
 void update_log_nf(int c);
 void init_nf_log(void);

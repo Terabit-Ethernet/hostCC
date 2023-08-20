@@ -3,7 +3,6 @@
 #include <linux/signal.h>
 #include <linux/sched/signal.h>
 #include "hostcc.h"
-// #include "hostcc-signals.h"
 #include "hostcc-local-response.h"
 
 extern uint32_t latest_mba_val;
@@ -31,9 +30,9 @@ void update_mba_msr_register(void){
   uint32_t low = 0;
   uint32_t high = 0;
   uint64_t msr_num = PQOS_MSR_MBA_MASK_START + MBA_COS_ID;
-  wrmsr_on_cpu(NUMA1_CORE,msr_num,low,high);
-  wrmsr_on_cpu(NUMA2_CORE,msr_num,low,high);
-  wrmsr_on_cpu(NUMA3_CORE,msr_num,low,high);
+  wrmsr_on_cpu(MBA_LEVEL_1_CORE,msr_num,low,high);
+  wrmsr_on_cpu(MBA_LEVEL_2_CORE,msr_num,low,high);
+  wrmsr_on_cpu(MBA_LEVEL_3_CORE,msr_num,low,high);
 }
 
 //helper function to send SIGCONT/SIGSTOP signals to processes
@@ -96,13 +95,13 @@ void increase_mba_val(void){
                 WARN_ON(!(false));
                 break;
             case 1:
-                wrmsr_on_cpu(NUMA1_CORE,msr_num,low,high);
+                wrmsr_on_cpu(MBA_LEVEL_1_CORE,msr_num,low,high);
                 break;
             case 2:
-                wrmsr_on_cpu(NUMA2_CORE,msr_num,low,high);
+                wrmsr_on_cpu(MBA_LEVEL_2_CORE,msr_num,low,high);
                 break;
             case 3:
-                wrmsr_on_cpu(NUMA3_CORE,msr_num,low,high);
+                wrmsr_on_cpu(MBA_LEVEL_3_CORE,msr_num,low,high);
                 break;
             default:
                 WARN_ON(!(false));
@@ -119,7 +118,7 @@ void increase_mba_val(void){
 
 void decrease_mba_val(void){
     uint64_t cur_tsc_val = rdtscp();
-    if((cur_tsc_val - last_reduced_tsc) / 3300 < REDUCTION_TIMEOUT_US){
+    if((cur_tsc_val - last_reduced_tsc) / 3300 < SLACK_TIME_US){
         return;
     }
     uint64_t msr_num = PQOS_MSR_MBA_MASK_START + MBA_COS_ID;
@@ -138,15 +137,15 @@ void decrease_mba_val(void){
         latest_mba_val--;
         switch(latest_mba_val){
             case 0:
-                wrmsr_on_cpu(NUMA1_CORE,msr_num,low,high);
+                wrmsr_on_cpu(MBA_LEVEL_1_CORE,msr_num,low,high);
                 last_reduced_tsc = rdtscp();
                 break;
             case 1:
-                wrmsr_on_cpu(NUMA2_CORE,msr_num,low,high);
+                wrmsr_on_cpu(MBA_LEVEL_2_CORE,msr_num,low,high);
                 last_reduced_tsc = rdtscp();
                 break;
             case 2:
-                wrmsr_on_cpu(NUMA3_CORE,msr_num,low,high);
+                wrmsr_on_cpu(MBA_LEVEL_3_CORE,msr_num,low,high);
                 last_reduced_tsc = rdtscp();
                 break;
             case 3:
@@ -193,30 +192,4 @@ void host_local_response(void){
         }
     }
   }
-}
-
-void mba_test(int threshold_us_up, int threshold_us_down, int cpu){
-    // every threshold_us worth microseconds, switch MBA level between 3 and 4
-    uint64_t cur_tsc_val = rdtscp();
-    if(latest_mba_val == 4){
-      if((cur_tsc_val - last_changed_level_tsc) / 3300 < threshold_us_down){
-          return;
-      }
-    }
-    else{
-      if((cur_tsc_val - last_changed_level_tsc) / 3300 < threshold_us_up){
-          return;
-      }
-    }
-    if(latest_mba_val == 4){
-      latest_mba_val = 3;
-    }
-    else{
-      latest_mba_val = 4;
-    }
-    update_mba_process_scheduler();
-    last_changed_level_tsc = rdtscp();
-    // if(!terminate_hcc_logging){
-    //   update_log_mba(cpu);
-    // }
 }
