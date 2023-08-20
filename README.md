@@ -4,7 +4,7 @@
 
 **hostCC** is a congestion control architecture proposed to effectively handle host congestion along with network fabric congestion. hostCC embodies three key design ideas: 
 
-(i) in addition to congestion signals originating within the network fabric (for eg., ECNs or delay computed using switch buffer occupancies), hostCC collects *host congestion signals*---indicating the precise time, location and reason for host congestion; 
+(i) in addition to congestion signals originating within the network fabric (for eg., ECNs or delay computed using switch buffer occupancies), hostCC collects *host congestion signals* at *sub-RTT granularity*---indicating the precise time, location and reason for host congestion; 
 
 (ii) in addition to the network congestion response performed by conventional congestion control protocols, hostCC performs *host-local congestion response*, at a *sub-RTT granularity*; and 
 
@@ -16,60 +16,80 @@
 ### Repository overview
 
 + *src/* contains the hostCC implementation logic (more details below)
-+ *utils/* contains necessary tools to recreate host congestion scenarios (using memory-intensive apps), and to measure app-level metrics (throughput, latency or packet drops for network apps) and host-level metrics (PCIe bandwidth, memory bandwidth, etc)
++ *utils/* contains necessary tools to recreate host congestion scenarios (apps which can create network-bound and host memory-bound traffic), and to measure various useful app-level metrics (throughput, latency or packet drops for network apps) and host-level metrics (PCIe bandwidth, memory bandwidth, etc)
 + *scripts/* contains necessary scripts to run similar experiments as in the [SIGCOMM'23 paper](https://www.cs.cornell.edu/~ragarwal/pubs/hostcc.pdf)
-+ *tests/* contains unit tests and some toy experiments to validate hostCC is working as intended
 
 ### hostCC implementation overview
-The *src/* directory contains three files, each implementing one of the key hostCC design elements: 
+The *src/* directory contains following key files:
++ *hostcc.c*: implements the logic to initialize the hostcc kernel module
 + *hostcc-signals.c*: implements the logic to collect host congestion signals at sub-microsecond scale.
 + *hostcc-local-response.c*: implements the logic to perform host-local resource allocation at sub-RTT scale.
 + *hostcc-network-response.c*: implements the logic to echo back the host congestion signal to the network sender.
 
 ## Running hostCC
 
-Note: Current implementation requires Intel CascadeLake architecture to run correctly. The MSR locations needed for host congestion signals and host-local response with newer architectures will be different. We plan to add support for newer architectures soon (see planned extensions below).
+Note: Current implementation requires Intel CascadeLake architecture to run correctly. The MSR locations needed for host congestion signals and host-local response with newer architectures will be different. We plan to add support for newer architectures soon (see planned extensions below). 
 
-Specify the required system specific inputs in the *scripts/launch.config* file (for eg., the cores to run memory-intensive apps and network apps respectively, PCIe slots containing the NIC, etc.). Detailed description for each parameter (and how to obtain the desired input for specific hardware) is provided inline in the config file. 
+### Specifying paramters needed to build hostCC
+
+Specify the required system specific inputs in the *src/config.json* file (for eg., the cores used for collecting host congestion signals, parameters for specifying the granularity of host-local response etc.). More details for each parameter is provided in the README inside the src/ directory. 
 ```
-vim scripts/launch.config
+cd src
+vim config.json
 ```
 
-Disable logging using the config file (by specifying 0 in the field "logging") to optimize for performance. The logfiles (containing sampled system states as sub-microsecond scale) are otherwise stored in the a directory *logs/*.
+### Building hostCC
 
-Desired environmental setup settings, for eg., DDIO, MTU size, TCP optimizations like TSO/GRO/aRFS (currently TCP optimizations can be configured using our script only for Mellanox CX5 NICs) can tuned using the following script. Run the script with -h flag to get list of all parameters, their default values, and how to 
+After modifying the config file, build hostCC by simply running
+```
+make
+```
+This will produce a loadable kernel module (hostcc-module)
+
+### Running hostCC
+
+One can run hostCC by simply loading the kernel module from within the src/ directory
+```
+sudo insmod hostcc-module.ko
+```
+hostCC can also take any user-specified values for IIO occupancy and PCIe bandwidth thresholds (I_T and B_T used in the [paper](https://www.cs.cornell.edu/~ragarwal/pubs/hostcc.pdf)) as command line input. More details provided in the README inside the src/ directory. 
+
+To stop running hostCC simply unload the module
+```
+sudo rmmod hostcc-module
+```
+
+### Installing required utilities
+
+Instructions to install required set of benchmarking applications and measurement tools (for running similar experiments in SIGCOMM'23 paper) is provided in the README in in *utils/* directory. 
++ Benchmarking applications: We use **iperf3** as network app generating throughput-bound traffic, **netperf** as network app generating latency-sensitive traffic, and **mlc** as the CPU app generating memory-intensive traffic.
++ Measurement tools: We use **Intel PCM** for measuring the host-level metrics and **Intel Memory Bandwidth Allocation** tool for performing host-local response. We also use **sar** utility to measure CPU utilization.
+
+### Specifying desired experimental settings
+
+Desired experiment settings, for eg., enabling DDIO, configuring MTU size, number of clients/servers used by the network-bound app, enabling TCP optimizations like TSO/GRO/aRFS (currently TCP optimizations can be configured using the provided script in this repo only for Mellanox CX5 NICs), etc can tuned using the script *utils/setup-envir.sh*. Run the script with -h flag to get list of all parameters, and their default values.  
 ```
 sudo bash utils/setup-envir.sh -h
 ```
 
-Then build hostCC by simply running
-```
-make
-```
-This will produce a loadable kernel module. Running hostCC using the following command simply loads this module with the desired parameters computed from the config file parameters:
-```
-sudo bash scripts/run-hostcc.sh
-```
-The following command will stop running hostCC
-```
-sudo bash scripts/stop-hostcc.sh
-```
 
-[Optional] If you're able to successfully configure, build and run hostCC, you can test whether its working as intended using some simple tests: cd to the *tests/* directory, and follow the README instructions there.
+
+### Running benchmarking experiments
+
+To help run experiments similar to those in SIGCOMM'23 paper, we provide following scripts in the *scripts/* directory:
+
++ *run-hostcc-tput-experiment.sh*
++ *run-hostcc-latency-experiment.sh*
+
+Run these scripts with -h flag to get list of all possible input parameters, including specifying the home directory (which is assumed to contain hostCC repo), client/server IP addresses, experimental settings as discussed above. The output results are generated in *utils/reports/* directory, and measurement logs are stored in *utils/logs/*.
 
 
 ## Reproducing results in the [SIGCOMM'23 paper](www.google.com)
 
-To run the same experiments as in the paper, run the following script, specifying the figure number for the corresponding experiment in the paper:
-```
-sudo bash scripts/run-hostCC-experiments.sh --figno=<FIGNO>
-```
-Specify FIGNO=ALL to simply run all experiments in the paper. The generated figures are stored in a */hostCC-experiments/* directory.
-
-Make sure to edit the config file *scripts/launch.config* before running the experiments.
+For ease of use, we also provide wrapper scripts inside the *scripts/SIGCOMM23-experiments* directory which run identical experiments as in the SIGCOMM'23 paper in order to reproduce our key evaluation results. Refer the README in *scripts/SIGCOMM23-experiments/* directory for details on how to run the scripts. 
 
 
-### Factors affecting reproducibality
+### Factors affecting reproducibality of results
 The results are sensitive to the setup, and any difference in the setup for following factors may lead to results different from the paper. A list of potential factors:
 + Processor: Number of NUMA nodes, whether hyperthreading is enabled, whether hardware prefetching is enabled, L1/L2/LLC sizes, CPU clock frequency, etc
 + Memory: DRAM generation (DDR3/DDR4/DDR5), DRAM frequency, number of DRAM channels per NUMA node
@@ -80,18 +100,18 @@ The results are sensitive to the setup, and any difference in the setup for foll
 + Optimizations: whether Linux network stack optimizations like TSO/GRO/aRFS are enabed
 + DCTCP parameters: Tx/Rx socket buffer sizes, DCTCP alpha, whether delayed ACKs is enabled
 
-We specify the parameters used for our hostCC evaluation in *utils/parameters.txt*.
+We specify the parameters used for our hostCC evaluation setup in *scripts/SIGCOMM23-experiments/default-parameters.txt*.
 
 
 ## Current limitations, and planned extensions
 
-*Additional signals and CC protocols.* Current implementation only uses IIO occupancy as host congestion signal (which is echoed back to the network sender via ECNs). We intend to extend hostCC to support additional signals (like host-interconnect delay and NIC buffer occupancy), allowing (a) comparing efficacy of other signals against IIO occupancy, and (b) incorporating additional congestion control protocols to make use of hostCC architecture.
+**Additional signals and CC protocols.** Current implementation only uses IIO occupancy as host congestion signal (which is echoed back to the network sender via ECNs). We intend to extend hostCC to support (a) additional signals NIC buffer occupancy when possible on our commodity Nvidia CX-5 NICs, and (b) incorporating additional congestion control protocols other than DCTCP to make use of hostCC architecture.
 
-*Additional allocation policies.* Current repo only provides a single example host resource allocation policy, providing utilization guarantees only for the network traffic. We plan to incorporate additional policies like max-min fairness and providing guranteees for host-local traffic in the near future.
+**Additional allocation policies.** Current repo only provides a single example host resource allocation policy, providing a static (user-specified) utilization guarantee for the network traffic. We plan to incorporate additional policies like max-min fairness between network/host-local traffic and providing guranteees for host-local traffic.
 
-*Additional hardware support.* Current repo only includes scripts for the setup described in [hostCC paper](https://www.cs.cornell.edu/~ragarwal/pubs/hostcc.pdf). We plan to add support for additional Intel architectures (Icelake and Sapphire Rapids) in the near future.
+**Additional hardware support.** Current repo only includes scripts for the setup described in [hostCC paper](https://www.cs.cornell.edu/~ragarwal/pubs/hostcc.pdf). We plan to add support for additional Intel /AMD architectures.
 
-*Additional optimizations.* Current implementation uses two dedicated cores to sample host congestion signals, and perform sub-RTT response. We plan to add possible optimizations (for eg., inline sampling via cores used for network stack processing) to reduce this overhead. However, note that the number of dedicated cores will remain the same even with increasing access link bandwidths, hence the implementation is already in-principle quite scalable. We plan to test the implementation with higher bandwidth NICs once we gain access to the hardware in the future.
+**Performance optimizations.** Current implementation uses two dedicated cores to sample host congestion signals, and perform sub-RTT response. We plan to add possible optimizations (for eg., inline sampling via cores used for network stack processing) to reduce this overhead. However, note that the number of dedicated cores will remain the same even with increasing access link bandwidths, hence the implementation is already in-principle quite scalable. We plan to test the implementation with higher bandwidth NICs once we gain access to the hardware.
 
 
 ## Contributing to hostCC
