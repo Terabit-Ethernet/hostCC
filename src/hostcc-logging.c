@@ -1,45 +1,14 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/sched.h>
-#include <linux/cpumask.h>
-#include <linux/kthread.h>
-#include <linux/threads.h>
-#include <linux/delay.h>
-#include <linux/signal.h>
-#include <linux/sched/signal.h>
 #include "hostcc-logging.h"
 
-extern uint64_t smoothed_avg_occ_rd;
-extern uint64_t smoothed_avg_occ_wr;
-extern u64 cur_rdtsc_nf;
-extern u64 latest_time_delta_nf_ns;
-extern u32 latest_datagram_len;
-extern u64 latest_measured_avg_occ_wr_nf;
-extern u64 latest_measured_avg_occ_rd_nf;
-extern uint64_t latest_time_delta_iio_rd_ns;
-extern uint64_t cur_rdtsc_iio_wr;
-extern uint64_t latest_avg_occ_rd;
-extern uint64_t cur_rdtsc_iio_rd;
-extern uint64_t latest_avg_occ_wr;
-extern uint64_t latest_time_delta_iio_wr_ns;
-extern uint64_t cur_rdtsc_mba;
-extern uint64_t latest_time_delta_mba_ns;
-extern uint32_t latest_measured_avg_occ_wr;
-extern uint32_t latest_measured_avg_occ_rd;
-extern uint32_t latest_mba_val;
-extern uint32_t smoothed_avg_pcie_bw;
-extern uint32_t latest_avg_pcie_bw;
-extern uint32_t smoothed_avg_pcie_bw_rd;
-extern uint32_t latest_avg_pcie_bw_rd;
-extern struct task_struct *app_pid_task;
-struct log_entry_iio_wr LOG_IIO_WR[LOG_SIZE];
-struct log_entry_iio_rd LOG_IIO_RD[LOG_SIZE];
-struct log_entry_mba LOG_MBA[LOG_SIZE];
-struct log_entry_nf LOG_NF[LOG_SIZE];
 uint32_t log_index_iio_wr = 0;
 uint32_t log_index_iio_rd = 0;
-uint32_t log_index_mba = 0;
+uint32_t log_index_pcie = 0;
 uint32_t log_index_nf = 0;
+
+struct log_entry_iio_wr LOG_IIO_WR[LOG_SIZE];
+struct log_entry_iio_rd LOG_IIO_RD[LOG_SIZE];
+struct log_entry_pcie LOG_PCIE[LOG_SIZE];
+struct log_entry_nf LOG_NF[LOG_SIZE];
 
 unsigned long long seconds;
 unsigned long microseconds;
@@ -151,55 +120,55 @@ void dump_iio_wr_log(void){
   }
 }
 
-void update_log_mba(int c){
-	LOG_MBA[log_index_mba % LOG_SIZE].l_tsc = cur_rdtsc_mba;
-	LOG_MBA[log_index_mba % LOG_SIZE].td_ns = latest_time_delta_mba_ns;
-	LOG_MBA[log_index_mba % LOG_SIZE].cpu = c;
-	LOG_MBA[log_index_mba % LOG_SIZE].mba_val = latest_mba_val;
-	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ = latest_measured_avg_occ_wr;
-	LOG_MBA[log_index_mba % LOG_SIZE].m_avg_occ_rd = latest_measured_avg_occ_rd;
-	LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw = (smoothed_avg_pcie_bw >> 10);
-	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw = latest_avg_pcie_bw;
-  LOG_MBA[log_index_mba % LOG_SIZE].s_avg_pcie_bw_rd = (smoothed_avg_pcie_bw_rd >> 10);
-	LOG_MBA[log_index_mba % LOG_SIZE].avg_pcie_bw_rd = latest_avg_pcie_bw_rd;
+void update_log_pcie(int c){
+	LOG_PCIE[log_index_pcie % LOG_SIZE].l_tsc = cur_rdtsc_mba;
+	LOG_PCIE[log_index_pcie % LOG_SIZE].td_ns = latest_time_delta_mba_ns;
+	LOG_PCIE[log_index_pcie % LOG_SIZE].cpu = c;
+	LOG_PCIE[log_index_pcie % LOG_SIZE].mba_val = latest_mba_val;
+	LOG_PCIE[log_index_pcie % LOG_SIZE].m_avg_occ = latest_measured_avg_occ_wr;
+	LOG_PCIE[log_index_pcie % LOG_SIZE].m_avg_occ_rd = latest_measured_avg_occ_rd;
+	LOG_PCIE[log_index_pcie % LOG_SIZE].s_avg_pcie_bw = (smoothed_avg_pcie_bw >> 10);
+	LOG_PCIE[log_index_pcie % LOG_SIZE].avg_pcie_bw = latest_avg_pcie_bw;
+  LOG_PCIE[log_index_pcie % LOG_SIZE].s_avg_pcie_bw_rd = (smoothed_avg_pcie_bw_rd >> 10);
+	LOG_PCIE[log_index_pcie % LOG_SIZE].avg_pcie_bw_rd = latest_avg_pcie_bw_rd;
   if(app_pid_task != NULL){
-	  LOG_MBA[log_index_mba % LOG_SIZE].task_state = app_pid_task->state;
+	  LOG_PCIE[log_index_pcie % LOG_SIZE].task_state = app_pid_task->state;
   }
-	log_index_mba++;
+	log_index_pcie++;
 }
 
-void init_mba_log(void){
+void init_pcie_log(void){
   int i=0;
   while(i<LOG_SIZE){
-      LOG_MBA[i].l_tsc = 0;
-      LOG_MBA[i].td_ns = 0;
-      LOG_MBA[i].cpu = 65;
-      LOG_MBA[i].mba_val = 0;
-      LOG_MBA[i].m_avg_occ = 0;
-      LOG_MBA[i].m_avg_occ_rd = 0;
-      LOG_MBA[i].avg_pcie_bw = 0;
-      LOG_MBA[i].s_avg_pcie_bw = 0;
-      LOG_MBA[i].task_state = 0xFFFF;
+      LOG_PCIE[i].l_tsc = 0;
+      LOG_PCIE[i].td_ns = 0;
+      LOG_PCIE[i].cpu = 65;
+      LOG_PCIE[i].mba_val = 0;
+      LOG_PCIE[i].m_avg_occ = 0;
+      LOG_PCIE[i].m_avg_occ_rd = 0;
+      LOG_PCIE[i].avg_pcie_bw = 0;
+      LOG_PCIE[i].s_avg_pcie_bw = 0;
+      LOG_PCIE[i].task_state = 0xFFFF;
       i++;
   }
 }
 
-void dump_mba_log(void){
+void dump_pcie_log(void){
   int i=0;
   while(i<LOG_SIZE){
-      printk("MBA:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%lld,%x\n",
+      printk("PCIE:%d,%lld,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%lld,%x\n",
       i,
-      LOG_MBA[i].l_tsc,
-      LOG_MBA[i].td_ns,
-      LOG_MBA[i].cpu,
-      LOG_MBA[i].mba_val,
-      LOG_MBA[i].m_avg_occ,
-      LOG_MBA[i].avg_pcie_bw,
-      LOG_MBA[i].s_avg_pcie_bw,
-      LOG_MBA[i].m_avg_occ_rd,
-      LOG_MBA[i].avg_pcie_bw_rd,
-      LOG_MBA[i].s_avg_pcie_bw_rd,
-      LOG_MBA[i].task_state);
+      LOG_PCIE[i].l_tsc,
+      LOG_PCIE[i].td_ns,
+      LOG_PCIE[i].cpu,
+      LOG_PCIE[i].mba_val,
+      LOG_PCIE[i].m_avg_occ,
+      LOG_PCIE[i].avg_pcie_bw,
+      LOG_PCIE[i].s_avg_pcie_bw,
+      LOG_PCIE[i].m_avg_occ_rd,
+      LOG_PCIE[i].avg_pcie_bw_rd,
+      LOG_PCIE[i].s_avg_pcie_bw_rd,
+      LOG_PCIE[i].task_state);
       i++;
   }
 }

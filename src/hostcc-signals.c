@@ -1,11 +1,8 @@
-#include "hostcc.h"
 #include "hostcc-signals.h"
-#include "hostcc-logging.h"
-#include "hostcc-local-response.h"
 
 extern bool terminate_hcc = false;
 extern bool terminate_hcc_logging = false;
-u64 last_changed_level_tsc = 0;
+uint64_t last_changed_level_tsc = 0;
 int target_pid = 0;
 int target_pcie_thresh = 84;
 int target_iio_wr_thresh = 70;
@@ -48,11 +45,6 @@ uint64_t prev_cum_occ_rd;
 uint64_t cur_cum_occ_rd;
 uint64_t prev_rdtsc_iio_rd = 0;
 uint64_t tsc_sample_iio_rd = 0;
-
-u64 sched_time;
-struct timespec64 curr_time;
-char time_str[32];
-unsigned int *mmconfig_ptr = NULL;
 
 // IIO Read occupancy logic (obtained via CHA counters)
 void update_iio_rd_occ_ctl_reg(void){

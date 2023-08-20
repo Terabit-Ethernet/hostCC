@@ -2,28 +2,16 @@
 #include "hostcc-network-response.h"
 #include "hostcc-logging.h"
 
-extern bool terminate_hcc;
-extern bool terminate_hcc_logging;
-extern int mode;
-extern int target_pid;
-extern int target_pcie_thresh;
-extern int target_iio_wr_thresh;
-extern int target_iio_rd_thresh;
-
-extern uint64_t smoothed_avg_occ_rd;
-extern uint64_t smoothed_avg_occ_wr;
-
 DEFINE_SPINLOCK(etx_spinlock_rx);
 DEFINE_SPINLOCK(etx_spinlock_tx);
 
-u64 latest_measured_avg_occ_wr_nf = 0;
-u64 latest_measured_avg_occ_rd_nf = 0;
-u64 latest_time_delta_nf_ns = 0;
-u32 latest_datagram_len = 0;
-
-u64 tsc_sample_nf = 0;
-u64 cur_rdtsc_nf = 0;
-u64 prev_rdtsc_nf = 0;
+uint64_t latest_measured_avg_occ_wr_nf = 0;
+uint64_t latest_measured_avg_occ_rd_nf = 0;
+uint64_t latest_time_delta_nf_ns = 0;
+uint32_t latest_datagram_len = 0;
+uint64_t tsc_sample_nf = 0;
+uint64_t cur_rdtsc_nf = 0;
+uint64_t prev_rdtsc_nf = 0;
 
 //Netfilter logic to mark ECN bits
 void sample_counters_nf(int c){

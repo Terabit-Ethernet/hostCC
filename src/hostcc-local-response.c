@@ -1,8 +1,3 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/signal.h>
-#include <linux/sched/signal.h>
-#include "hostcc.h"
 #include "hostcc-local-response.h"
 
 extern uint32_t latest_mba_val;

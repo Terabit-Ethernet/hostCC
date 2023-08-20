@@ -1,6 +1,15 @@
 #ifndef HOSTCC_LOGGING_H
 #define HOSTCC_LOGGING_H
 
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/cpumask.h>
+#include <linux/kthread.h>
+#include <linux/threads.h>
+#include <linux/delay.h>
+#include <linux/signal.h>
+#include <linux/sched/signal.h>
 #include "hostcc.h"
 
 struct log_entry_iio_rd{
@@ -19,7 +28,7 @@ struct log_entry_iio_wr{
 	int cpu; //current cpu
 };
 
-struct log_entry_mba{
+struct log_entry_pcie{
 	uint64_t l_tsc; //latest TSC
 	uint64_t td_ns; //latest measured time delta in us
 	char ktime[32]; //latest measured time delta in us
@@ -51,8 +60,8 @@ void dump_iio_rd_log(void);
 void update_log_iio_wr(int c);
 void init_iio_wr_log(void);
 void dump_iio_wr_log(void);
-void update_log_mba(int c);
-void init_mba_log(void);
-void dump_mba_log(void);
+void update_log_pcie(int c);
+void init_pcie_log(void);
+void dump_pcie_log(void);
 
 #endif

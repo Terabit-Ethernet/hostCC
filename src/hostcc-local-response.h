@@ -1,10 +1,14 @@
 #ifndef HOSTCC_LOCAL_RESPONSE_H
 #define HOSTCC_LOCAL_RESPONSE_H
 
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/signal.h>
+#include <linux/sched/signal.h>
+#include "hostcc.h"
+
 #define SLACK_TIME_US 150
 #define WORKER_BUDGET 1000000
-
-extern struct task_struct *app_pid_task;
 
 static struct sched_param {
   int sched_priority;

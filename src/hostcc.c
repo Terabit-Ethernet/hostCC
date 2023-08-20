@@ -84,7 +84,7 @@ void poll_pcie_init(void) {
     #endif
     //initialize the log
     printk(KERN_INFO "Starting PCIe Bandwidth Measurement");
-    init_mba_log();
+    init_pcie_log();
 }
 
 void poll_pcie_exit(void) {
@@ -101,7 +101,7 @@ void poll_pcie_exit(void) {
         #endif
     }
     if(PCIE_LOGGING){
-      dump_mba_log();
+      dump_pcie_log();
     }
 }
 
@@ -119,7 +119,7 @@ void thread_fun_poll_pcie(struct work_struct *work) {
     }
     host_local_response();
     if(!terminate_hcc_logging && PCIE_LOGGING){
-      update_log_mba(cpu);
+      update_log_pcie(cpu);
     }
     budget--;
   }
