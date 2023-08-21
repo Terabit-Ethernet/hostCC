@@ -105,8 +105,12 @@ done
 
 if [ "$rdma" = 1 ]
 then
- echo "Configuring MTU according to RDMA supported values..."
- mtu=$(($mtu + 96))
+  echo "Configuring MTU according to RDMA supported values..."
+  mtu=$(($mtu + 96))
+  if [ "$mtu" -lt 1280 ]; then
+      echo "Requested physical MTU size is $mtu, updating to 1280"
+      mtu=1280
+  fi
 fi
 
 # setup the interface
