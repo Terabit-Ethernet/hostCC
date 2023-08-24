@@ -32,7 +32,7 @@ fi
 eval set -- "$OPTS"
 
 #default values
-home='/home/saksham'
+home='/home/benny'
 outdir='test'
 dur=30
 type=1

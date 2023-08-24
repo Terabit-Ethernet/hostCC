@@ -28,11 +28,11 @@ fi
 eval set -- "$OPTS"
 
 #default values
-home='/home/saksham'
+home='/home/benny'
 mtu=4000
 ddio=0
 intf="ens2f1"
-addr="192.168.10.122"
+addr="192.168.11.116"
 opt=1
 buf=1
 ecn=1

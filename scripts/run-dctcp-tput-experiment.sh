@@ -33,34 +33,34 @@ eval set -- "$OPTS"
 
 #default values
 exp="rdma-test"
-server="192.168.10.122"
-client="192.168.10.121"
+server="192.168.11.116"
+client="192.168.11.117"
 server_intf="ens2f1"
-client_intf="ens2f0"
+client_intf="ens2f1"
 num_servers=4
 num_clients=4
 init_port=3000
 ddio=0
 mtu=4000
-dur=30
+dur=15
 cpu_mask="4,8,12,16"
 mlc_cores="none"
 mlc_dur=100
 num_runs=2
-home="/home/saksham"
+home="/home/benny"
 setup_dir=$home/hostCC/utils
 exp_dir=$home/hostCC/utils/tcp
 mlc_dir=$home/mlc/Linux
 
-echo -n "Enter SSH Username for client:"
-read uname
-echo -n "Enter SSH Address for client:"
-read addr
-echo -n "Enter SSH Password for client:"
-read -s password
-# uname=abc
-# addr=xyz.com
-# password=****
+#echo -n "Enter SSH Username for client:"
+#read uname
+#echo -n "Enter SSH Address for client:"
+#read addr
+#echo -n "Enter SSH Password for client:"
+#read -s password
+uname=benny
+addr=192.168.11.117
+password=benny
 
 
 while :
