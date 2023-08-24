@@ -137,7 +137,7 @@ fi
 #Enable aRFS, TSO, GRO for the interface
 if [ "$opt" = 1 ]
 then
-    cd $home/terabit-network-stack-profiling/
+    cd $home/Understanding-network-stack-overheads-SIGCOMM-2021/
     echo "Enabling TCP optimizations (TSO, GRO, aRFS)..."
     sudo python network_setup.py $intf --arfs --mtu $mtu --sock-size --tso --gro
     cd -
