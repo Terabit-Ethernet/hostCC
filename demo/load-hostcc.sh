@@ -1,0 +1,1 @@
+sudo insmod ../src/hostcc-module.ko

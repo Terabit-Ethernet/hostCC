@@ -1,0 +1,289 @@
+<!-- templates/dashboard.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>hostCC Dashboard</title>
+    <!-- <link rel="stylesheet" type="text/css" href="styles.css"> -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-gap: 20px;
+            margin: 20px;
+        }
+
+        .plot {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .plot-container {
+        background-color: black; /* Set the background color for the plot container */
+        }
+
+        .buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="buttons">
+        <button id="button1">Launch MApp</button>
+        <button id="button2">Kill MApp</button>
+    </div>
+    <div class="buttons">
+        <button id="button3">Load hostCC</button>
+        <button id="button4">Unload hostCC</button>
+    </div>
+    <div class="dashboard">
+        <div class="plot" id="pcie-plot"></div>
+        <div class="plot" id="drop-rates-plot"></div>
+        <div class="plot" id="membw-plot"></div>
+        <div class="plot" id="iio-occ-plot"></div>
+        <!-- <div class="plot" id="cpu-plot"></div> -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('button1').addEventListener('click', function () {
+                launchMlcScript('launch-mlc');
+            });
+            
+            document.getElementById('button2').addEventListener('click', function () {
+                killMlcScript('kill-mlc');
+            });
+
+            document.getElementById('button3').addEventListener('click', function () {
+                loadHostCCScript('load-hostcc');
+            });
+            
+            document.getElementById('button4').addEventListener('click', function () {
+                unloadHostCCScript('unload-hostcc');
+            });
+        });
+    
+        function launchMlcScript(scriptName) {
+            fetch('/launch-mlc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+
+        function killMlcScript(scriptName) {
+            fetch('/kill-mlc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+
+        function loadHostCCScript(scriptName) {
+            fetch('/load-hostcc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+
+        function unloadHostCCScript(scriptName) {
+            fetch('/unload-hostcc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+    </script>
+
+
+    <!-- <div id="cpu-plot"></div> -->
+
+    <script>
+        function updateCpuPlot(n) {
+            fetch(`/get_last_n_cpu_data/${n}`)
+                .then(response => response.json())
+                .then(data => {
+                    var trace = {
+                        x: data.timestamps.map(ts => new Date(ts * 1000)),
+                        y: data.utilizations,
+                        fill: 'tozeroy',  // Fill the area below the line with color
+                        fillcolor: 'rgba(0, 100, 80, 0.6)',  // Specify the fill color
+                        line: { color: 'rgb(0, 100, 80)' },  // Line color
+                        type: 'scatter',
+                    };
+                    var layout = {
+                        title: `CPU Utilization vs Time`,
+                        xaxis: { title: 'Time (HH:MM:SS)' },
+                        yaxis: { title: 'CPU Utilization', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                    };
+                    Plotly.newPlot('cpu-plot', [trace], layout);
+                });
+        }
+    
+        // Call the function with the desired N value
+        updateCpuPlot(60);  // Change this to your desired N value
+        setInterval(() => updateCpuPlot(60), 1000);  // Change N value here as well
+    </script>
+
+<!-- <div id="pcie-plot"></div> -->
+
+<script>
+    function updatePciePlot(n) {
+        fetch(`/get_last_n_pcie_data/${n}`)
+            .then(response => response.json())
+            .then(data => {
+                var trace = {
+                    x: data.timestamps.map(ts => new Date(ts * 1000)),
+                    y: data.pcie_bws,
+                    fill: 'tozeroy',  // Fill the area below the line with color
+                    fillcolor: 'rgba(0, 100, 80, 0.6)',  // Specify the fill color
+                    line: { color: 'rgb(0, 100, 80)' },  // Line color
+                    type: 'scatter'
+                };
+                var layout = {
+                    title: `Network Throughput (Gbps) vs Time`,
+                    xaxis: { title: 'Time (HH:MM:SS)' },
+                    yaxis: { title: 'Network Throughput', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                };
+                Plotly.newPlot('pcie-plot', [trace], layout);
+            });
+    }
+
+    // Call the function with the desired N value
+    updatePciePlot(60);  // Change this to your desired N value
+    setInterval(() => updatePciePlot(60), 1000);  // Change N value here as well
+</script>
+
+<!-- <div id="membw-plot"></div> -->
+
+<script>
+    function updateMembwPlot(n) {
+        fetch(`/get_last_n_membw_data/${n}`)
+            .then(response => response.json())
+            .then(data => {
+                var trace = {
+                    x: data.timestamps.map(ts => new Date(ts * 1000)),
+                    y: data.mem_bws,
+                    fill: 'tozeroy',  // Fill the area below the line with color
+                    fillcolor: 'rgba(40, 60, 110, 0.6)',  // Specify the fill color
+                    line: { color: 'rgb(40, 60, 110)' },  // Line color
+                    type: 'scatter'
+                };
+                var layout = {
+                    title: `MemBW Utilization (%) vs Time`,
+                    xaxis: { title: 'Time (HH:MM:SS)'},
+                    yaxis: { title: 'MemBW Utilization (%)', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                };
+                Plotly.newPlot('membw-plot', [trace], layout);
+            });
+    }
+
+    // Call the function with the desired N value
+    updateMembwPlot(60);  // Change this to your desired N value
+    setInterval(() => updateMembwPlot(60), 1000);  // Change N value here as well
+</script>
+
+<!-- <div id="drop-rates-plot"></div> -->
+
+<script>
+    function updateDropRatesPlot(n) {
+        fetch(`/get_last_n_drops_data/${n}`)
+            .then(response => response.json())
+            .then(data => {
+                var trace = {
+                    x: data.timestamps.map(ts => new Date(ts * 1000)),
+                    y: data.drop_rates,
+                    fill: 'tozeroy',  // Fill the area below the line with color
+                    fillcolor: 'rgba(100, 20, 20, 0.6)',  // Specify the fill color
+                    line: { color: 'rgb(100, 20, 20)' },  // Line color
+                    type: 'scatter'
+                };
+                var layout = {
+                    title: `Drop Rate (%) vs Time`,
+                    xaxis: { title: 'Time (HH:MM:SS)' },
+                    yaxis: { title: 'Drop Rate (%)', type: 'log', autorange: false, range: [-5, 1]  }, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                };
+                Plotly.newPlot('drop-rates-plot', [trace], layout);
+            });
+    }
+
+    // Call the function with the desired N value
+    updateDropRatesPlot(60);  // Change this to your desired N value
+    setInterval(() => updateDropRatesPlot(60), 1000);  // Change N value here as well
+</script>
+
+<script>
+    function updateIIOOccPlot(n) {
+        fetch(`/get_last_n_iio_data/${n}`)
+            .then(response => response.json())
+            .then(data => {
+                var trace = {
+                    x: data.timestamps.map(ts => new Date(ts * 1000)),
+                    y: data.iio_occs,
+                    fill: 'tozeroy',  // Fill the area below the line with color
+                    fillcolor: 'rgba(249, 115, 6, 0.6)',  // Specify the fill color
+                    line: { color: 'rgb(249, 115, 6)' },  // Line color
+                    type: 'scatter'
+                };
+                var layout = {
+                    title: `IIO Occupancy (cachelines) vs Time`,
+                    xaxis: { title: 'Time (HH:MM:SS)' },
+                    yaxis: { title: 'IIO Occupancy \n (99.9p over 1s interval)', range: [0, 100]  }, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                };
+                Plotly.newPlot('iio-occ-plot', [trace], layout);
+            });
+    }
+
+    // Call the function with the desired N value
+    updateIIOOccPlot(60);  // Change this to your desired N value
+    setInterval(() => updateIIOOccPlot(60), 1000);  // Change N value here as well
+</script>
+</body>
+</html>

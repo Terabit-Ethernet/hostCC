@@ -1,0 +1,1 @@
+sudo pkill -9 -f loaded_latency
