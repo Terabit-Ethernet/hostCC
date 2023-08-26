@@ -8,6 +8,8 @@ module_param(target_pid, int, 0);
 module_param(target_pcie_thresh, int, 0);
 module_param(target_iio_wr_thresh, int, 0);
 module_param(target_iio_rd_thresh, int, 0);
+module_param(enable_network_response, int, 0);
+module_param(enable_local_response, int, 0);
 module_param(mode, int, 0);
 MODULE_PARM_DESC(target_pid, "Target process ID");
 MODULE_PARM_DESC(mode, "Mode of operation (Rx: 0, or Tx: 1)");
@@ -18,6 +20,9 @@ extern bool terminate_hcc_logging;
 struct workqueue_struct *poll_iio_queue, *poll_pcie_queue;
 struct work_struct poll_iio, poll_pcie;
 extern int mode;
+
+int enable_local_response = 1;
+int enable_network_response = 1;
 
 void poll_iio_init(void) {
     //initialize the log
@@ -117,7 +122,9 @@ void thread_fun_poll_pcie(struct work_struct *work) {
     } else{
     latest_measured_avg_occ_rd = smoothed_avg_occ_rd >> 10; //to reflect a consistent IIO occupancy value in log and MBA update logic
     }
-    host_local_response();
+    if(enable_local_response){
+      host_local_response();
+    }
     if(!terminate_hcc_logging && PCIE_LOGGING){
       update_log_pcie(cpu);
     }

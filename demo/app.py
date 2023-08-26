@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import os
 import subprocess
@@ -44,8 +44,10 @@ def index():
 @app.route('/launch-mlc', methods=['POST'])
 def launch_mlc():
     try:
+        data = request.get_json()
+        slider_value = data['slider']
         # Replace 'your_script.sh' with the actual path to your Bash script
-        subprocess.run(['bash', 'launch-mlc.sh'])
+        subprocess.run(['bash', 'launch-mlc.sh',str(slider_value)])
         return jsonify({'message': 'Script executed successfully'})
     except Exception as e:
         return jsonify({'message': 'Error executing script', 'error': str(e)})
@@ -62,8 +64,13 @@ def kill_mlc():
 @app.route('/load-hostcc', methods=['POST'])
 def load_hostcc():
     try:
+        data = request.get_json()
+        print(data)
+        slider_value = data['slider']
+        host_local_response_val = int(data['hostlocalresponse'])
+        network_response_val = int(data['networkresponse'])
         # Replace 'your_script.sh' with the actual path to your Bash script
-        subprocess.run(['bash', 'load-hostcc.sh'])
+        subprocess.run(['bash', 'load-hostcc.sh',str(int(float(slider_value) * 1.05)), str(host_local_response_val), str(network_response_val)])
         return jsonify({'message': 'Script executed successfully'})
     except Exception as e:
         return jsonify({'message': 'Error executing script', 'error': str(e)})

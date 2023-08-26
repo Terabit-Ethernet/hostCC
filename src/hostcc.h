@@ -41,6 +41,8 @@ extern int target_pid;
 extern int target_pcie_thresh;
 extern int target_iio_wr_thresh;
 extern int target_iio_rd_thresh;
+extern int enable_network_response;
+extern int enable_local_response;
 extern int mode; //mode = 0 => Rx; mode = 1 => Tx
 extern uint64_t cur_rdtsc_iio_rd;
 extern uint64_t latest_avg_occ_rd;

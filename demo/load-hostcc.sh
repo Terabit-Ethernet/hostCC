@@ -1,1 +1,1 @@
-sudo insmod ../src/hostcc-module.ko
+sudo insmod ../src/hostcc-module.ko target_pcie_thresh=$1 target_pid=$(pidof mlc) enable_local_response=$2 enable_network_response=$3

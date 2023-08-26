@@ -53,13 +53,13 @@ unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct
     if(!terminate_hcc_logging){
       update_log_nf(cpu);
     }
-    #if !(NO_ECN_MARKING)
-    if(latest_measured_avg_occ_wr_nf > target_iio_wr_thresh){
-        iph->tos = iph->tos | 0x03;
-        iph->check = 0;
-        ip_send_check(iph);
+    if(enable_network_response){
+      if(latest_measured_avg_occ_wr_nf > target_iio_wr_thresh){
+          iph->tos = iph->tos | 0x03;
+          iph->check = 0;
+          ip_send_check(iph);
+      }
     }
-    #endif
 		spin_unlock(&etx_spinlock_rx);
 
 		return NF_ACCEPT;
@@ -89,13 +89,13 @@ unsigned int nf_markecn_handler_tx(void *priv, struct sk_buff *skb, const struct
     if(!terminate_hcc_logging){
       update_log_nf(cpu);
     }
-    #if !(NO_ECN_MARKING)
-    if(latest_measured_avg_occ_rd_nf > target_iio_rd_thresh){
-        iph->tos = iph->tos | 0x03;
-        iph->check = 0;
-        ip_send_check(iph);
+    if(enable_network_response){
+      if(latest_measured_avg_occ_rd_nf > target_iio_rd_thresh){
+          iph->tos = iph->tos | 0x03;
+          iph->check = 0;
+          ip_send_check(iph);
+      }
     }
-    #endif
 		spin_unlock(&etx_spinlock_tx);
 
 		return NF_ACCEPT;

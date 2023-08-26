@@ -14,7 +14,6 @@ enum {
 	INET_ECN_MASK = 3,
 };
 
-#define NO_ECN_MARKING 0
 
 void sample_counters_nf(int c);
 unsigned int nf_markecn_handler_rx(void *priv, struct sk_buff *skb, const struct nf_hook_state *state);

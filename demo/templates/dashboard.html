@@ -31,8 +31,20 @@
         }
 
         .buttons {
+            display: flex;
+            align-items: center; /* Vertically center elements */
+            justify-content: center;
             text-align: center;
             margin-top: 20px;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-right: 20px; /* Add some spacing between label/slider and button */
+            margin-left: 20px; /* Add some spacing between label/slider and button */
         }
 
         button {
@@ -41,6 +53,56 @@
             color: #ffffff;
             border: none;
             cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+        }
+
+        killbutton {
+            padding: 10px 20px;
+            background-color: #d30d0d;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+        }
+        killbutton:hover {
+            background-color: #990909;
+        }
+
+        launchbutton {
+            padding: 10px 20px;
+            background-color: #e68517;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+        }
+        launchbutton:hover {
+            background-color: #b96c13;
+        }
+
+
+        unloadbutton {
+            padding: 10px 20px;
+            background-color: #d30d0d;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+        }
+        unloadbutton:hover {
+            background-color: #990909;
+        }
+
+        loadbutton {
+            padding: 10px 20px;
+            background-color: #0fad1a;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+        }
+        loadbutton:hover {
+            background-color: #0b8813;
         }
 
         button:hover {
@@ -51,12 +113,30 @@
 </head>
 <body>
     <div class="buttons">
-        <button id="button1">Launch MApp</button>
-        <button id="button2">Kill MApp</button>
+        <div class="slider-container">
+            <label for="slider" class="slider-label">Number of MApp cores:</label>
+            <input type="range" id="slider" min="1" max="3" value="1">
+            <span id="slider-value" class="slider-value">1</span>
+        </div>
+        <launchbutton id="button1">Launch MApp</launchbutton>
+        <killbutton id="button2" >Kill MApp</killbutton>
     </div>
     <div class="buttons">
-        <button id="button3">Load hostCC</button>
-        <button id="button4">Unload hostCC</button>
+        <div class="checkboxes">
+            <label>
+                <input type="checkbox" id="host-local-checkbox"> Enable Host-local Response
+            </label>
+            <label>
+                <input type="checkbox" id="network-checkbox"> Enable Network Response
+            </label>
+        </div>
+        <div class="slider-container">
+            <label for="slider2" class="slider-label">Target Network Bandwidth (Gbps):</label>
+            <input type="range" id="slider2" min="10" max="90" step="5" value="80">
+            <span id="slider2-value" class="slider2-value">80</span>
+        </div>
+        <loadbutton id="button3">Load hostCC</loadbutton>
+        <unloadbutton id="button4">Unload hostCC</unloadbutton>
     </div>
     <div class="dashboard">
         <div class="plot" id="pcie-plot"></div>
@@ -68,8 +148,24 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const slider = document.getElementById('slider');
+            const sliderValue = document.getElementById('slider-value');
+            slider.addEventListener('input', function () {
+                sliderValue.textContent = slider.value;
+            });
+
+            const slider2 = document.getElementById('slider2');
+            const slider2Value = document.getElementById('slider2-value');
+            slider2.addEventListener('input', function () {
+                slider2Value.textContent = slider2.value;
+            });
+
+            const hostLocalCheckbox = document.getElementById('host-local-checkbox');
+            const networkCheckbox= document.getElementById('network-checkbox');
+
             document.getElementById('button1').addEventListener('click', function () {
-                launchMlcScript('launch-mlc');
+                const sliderVal = slider.value;
+                launchMlcScript('launch-mlc',sliderVal);
             });
             
             document.getElementById('button2').addEventListener('click', function () {
@@ -77,7 +173,10 @@
             });
 
             document.getElementById('button3').addEventListener('click', function () {
-                loadHostCCScript('load-hostcc');
+                const slider2Val = slider2.value;
+                const hostLocalCheckboxVal = hostLocalCheckbox.checked; // true if checked, false if not checked
+                const networkCheckboxVal = networkCheckbox.checked; // true if checked, false if not checked
+                loadHostCCScript('load-hostcc',slider2Val,hostLocalCheckboxVal,networkCheckboxVal);
             });
             
             document.getElementById('button4').addEventListener('click', function () {
@@ -85,13 +184,13 @@
             });
         });
     
-        function launchMlcScript(scriptName) {
+        function launchMlcScript(scriptName, sliderVal) {
             fetch('/launch-mlc', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ script: scriptName })
+                body: JSON.stringify({ script: scriptName, slider: sliderVal })
             })
             .then(response => response.json())
             .then(data => {
@@ -113,13 +212,13 @@
             });
         }
 
-        function loadHostCCScript(scriptName) {
+        function loadHostCCScript(scriptName, sliderVal, hostLocalResponseVal, networkResponseVal) {
             fetch('/load-hostcc', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ script: scriptName })
+                body: JSON.stringify({ script: scriptName, slider: sliderVal, hostlocalresponse: hostLocalResponseVal, networkresponse: networkResponseVal })
             })
             .then(response => response.json())
             .then(data => {
