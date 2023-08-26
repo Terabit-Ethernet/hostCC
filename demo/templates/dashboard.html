@@ -259,7 +259,10 @@
                     };
                     var layout = {
                         title: `CPU Utilization vs Time`,
-                        xaxis: { title: 'Time (HH:MM:SS)' },
+                        xaxis: { title: 'Time (HH:MM:SS)',
+                        range: [new Date() - 120000, new Date()], // Set fixed 60-second range
+                        type: 'date' // Specify the x-axis type as date 
+                    },
                         yaxis: { title: 'CPU Utilization', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
                     };
                     Plotly.newPlot('cpu-plot', [trace], layout);
@@ -267,8 +270,8 @@
         }
     
         // Call the function with the desired N value
-        updateCpuPlot(60);  // Change this to your desired N value
-        setInterval(() => updateCpuPlot(60), 1000);  // Change N value here as well
+        updateCpuPlot(200);  // Change this to your desired N value
+        setInterval(() => updateCpuPlot(200), 1000);  // Change N value here as well
     </script>
 
 <!-- <div id="pcie-plot"></div> -->
@@ -288,7 +291,10 @@
                 };
                 var layout = {
                     title: `Network Throughput (Gbps) vs Time`,
-                    xaxis: { title: 'Time (HH:MM:SS)' },
+                    xaxis: { title: 'Time (HH:MM:SS)',
+                        range: [new Date() - 120000, new Date()], // Set fixed 60-second range
+                        type: 'date' // Specify the x-axis type as date 
+                    },
                     yaxis: { title: 'Network Throughput', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
                 };
                 Plotly.newPlot('pcie-plot', [trace], layout);
@@ -296,8 +302,8 @@
     }
 
     // Call the function with the desired N value
-    updatePciePlot(60);  // Change this to your desired N value
-    setInterval(() => updatePciePlot(60), 1000);  // Change N value here as well
+    updatePciePlot(200);  // Change this to your desired N value
+    setInterval(() => updatePciePlot(200), 1000);  // Change N value here as well
 </script>
 
 <!-- <div id="membw-plot"></div> -->
@@ -317,7 +323,10 @@
                 };
                 var layout = {
                     title: `MemBW Utilization (%) vs Time`,
-                    xaxis: { title: 'Time (HH:MM:SS)'},
+                    xaxis: { title: 'Time (HH:MM:SS)',
+                        range: [new Date() - 120000, new Date()], // Set fixed 60-second range
+                        type: 'date' // Specify the x-axis type as date 
+                    },
                     yaxis: { title: 'MemBW Utilization (%)', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
                 };
                 Plotly.newPlot('membw-plot', [trace], layout);
@@ -325,8 +334,8 @@
     }
 
     // Call the function with the desired N value
-    updateMembwPlot(60);  // Change this to your desired N value
-    setInterval(() => updateMembwPlot(60), 1000);  // Change N value here as well
+    updateMembwPlot(200);  // Change this to your desired N value
+    setInterval(() => updateMembwPlot(200), 1000);  // Change N value here as well
 </script>
 
 <!-- <div id="drop-rates-plot"></div> -->
@@ -346,7 +355,10 @@
                 };
                 var layout = {
                     title: `Drop Rate (%) vs Time`,
-                    xaxis: { title: 'Time (HH:MM:SS)' },
+                    xaxis: { title: 'Time (HH:MM:SS)',
+                        range: [new Date() - 120000, new Date()], // Set fixed 60-second range
+                        type: 'date' // Specify the x-axis type as date 
+                    },
                     yaxis: { title: 'Drop Rate (%)', type: 'log', autorange: false, range: [-5, 1]  }, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
                 };
                 Plotly.newPlot('drop-rates-plot', [trace], layout);
@@ -354,8 +366,8 @@
     }
 
     // Call the function with the desired N value
-    updateDropRatesPlot(60);  // Change this to your desired N value
-    setInterval(() => updateDropRatesPlot(60), 1000);  // Change N value here as well
+    updateDropRatesPlot(200);  // Change this to your desired N value
+    setInterval(() => updateDropRatesPlot(200), 1000);  // Change N value here as well
 </script>
 
 <script>
@@ -373,7 +385,10 @@
                 };
                 var layout = {
                     title: `IIO Occupancy (cachelines) vs Time`,
-                    xaxis: { title: 'Time (HH:MM:SS)' },
+                    xaxis: { title: 'Time (HH:MM:SS)',
+                        range: [new Date() - 120000, new Date()], // Set fixed 60-second range
+                        type: 'date' // Specify the x-axis type as date 
+                    },
                     yaxis: { title: 'IIO Occupancy \n (99.9p over 1s interval)', range: [0, 100]  }, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
                 };
                 Plotly.newPlot('iio-occ-plot', [trace], layout);
@@ -381,8 +396,8 @@
     }
 
     // Call the function with the desired N value
-    updateIIOOccPlot(60);  // Change this to your desired N value
-    setInterval(() => updateIIOOccPlot(60), 1000);  // Change N value here as well
+    updateIIOOccPlot(200);  // Change this to your desired N value
+    setInterval(() => updateIIOOccPlot(200), 1000);  // Change N value here as well
 </script>
 </body>
 </html>
