@@ -316,3 +316,13 @@ then
     mv iio.log logs/$outdir/iio.log
     #TODO: make more generic and add a parser to create report for iio occupancy logging from userspace
 fi
+
+
+if [ "$flame" = 1 ]
+then
+    sudo rm -f out.perf-folded
+    echo "Creating Flame Graph..."
+    sudo perf record -C $cores -g -F 99 -- sleep $dur
+    sudo perf script | $home/FlameGraph/stackcollapse-perf.pl > out.perf-folded
+    sudo $home/FlameGraph/flamegraph.pl out.perf-folded > logs/$outdir/perf-kernel-flame.svg
+fi

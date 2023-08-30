@@ -1,0 +1,4 @@
+sudo bash run-dctcp-tput-experiment.sh -H /home/benny -d 1 -M 9000 --num_servers 1 --num_clients 1
+sudo bash run-dctcp-tput-experiment.sh -H /home/benny -d 1 -M 4000 --num_servers 1 --num_clients 1
+sudo bash run-dctcp-tput-experiment.sh -H /home/benny -d 1 -M 4000 --num_servers 1 --num_clients 1 -server_intf ens2f1np1
+

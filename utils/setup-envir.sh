@@ -11,12 +11,13 @@ help()
                [ -f | --hwpref (Enable hardware prefetching) ]
                [ -r | --rdma (=0/1, whether the setup is for running RDMA experiments (MTU offset will be different)) ]
                [ -p | --pfc (=0/1, disable or enable PFC) ]
+               [--ring_buffer (size of Rx ring buffer. Note: opt must be set to change this)]
                [ -h | --help  ]"
     exit 2
 }
 
 SHORT=H:,m:,d:,i:,a:,o:,b:,e:,f:,r:,p:,h
-LONG=home:,mtu:,ddio:,intf:,addr:,opt:,buf:,ecn:,hwpref:,rdma:,pfc:,help
+LONG=home:,mtu:,ddio:,intf:,addr:,opt:,buf:,ecn:,hwpref:,rdma:,pfc:,ring_buffer:,help
 OPTS=$(getopt -a -n setup-envir --options $SHORT --longoptions $LONG -- "$@")
 
 VALID_ARGUMENTS=$# # Returns the count of arguments that are in short or long options
@@ -39,6 +40,7 @@ ecn=1
 hwpref=1
 rdma=0
 pfc=0
+ring_buffer=1024
 
 
 
@@ -89,6 +91,10 @@ do
       rdma="$2"
       shift 2
       ;;
+    --ring_buffer )
+      ring_buffer="$2"
+      shift 2
+      ;; 
     -h | --help)
       help
       ;;
@@ -139,7 +145,7 @@ if [ "$opt" = 1 ]
 then
     cd $home/terabit-network-stack-profiling/
     echo "Enabling TCP optimizations (TSO, GRO, aRFS)..."
-    sudo python network_setup.py $intf --arfs --mtu $mtu --sock-size --tso --gro
+    sudo python network_setup.py $intf --arfs --mtu $mtu --sock-size --tso --gro --ring-buffer $ring_buffer
     cd -
 fi
 

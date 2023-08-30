@@ -14,13 +14,16 @@ help()
                [ -M | --MTU (=256/512/1024/2048/4096; MTU size used;default=4096) ]
                [ -d | --ddio (=0/1, whether DDIO is disabled or enabled) ]
                [ -c | --cpu_mask (comma separated CPU mask to run the app on, recommended to run on NUMA node local to the NIC for maximum performance; default=0) ]
+               [ -b | --bandwidth (bandwidth to send at in bits/sec)]
                [ --mlc_cores (comma separated values for MLC cores, for eg., '1,2,3' for using cores 1,2 and 3. Use 'none' to skip running MLC.) ]
+               [ --ring_buffer (size of NIC Rx buffer)]
+               [ --buf (TCP socket buffer size (in MB))]
                [ -h | --help  ]"
     exit 2
 }
 
-SHORT=H:,S:,C:,E:,M:,d:,c:,h
-LONG=home:,server:,client:,num_servers:,num_clients:,server_intf:,client_intf:,exp:,txn:,MTU:,size:,ddio:,cpu_mask:,mlc_cores:,help
+SHORT=H:,S:,C:,E:,M:,d:,c:,b:,h
+LONG=home:,server:,client:,num_servers:,num_clients:,server_intf:,client_intf:,exp:,txn:,MTU:,size:,ddio:,cpu_mask:,mlc_cores:,ring_buffer:,bandwidth:,buf:,help
 OPTS=$(getopt -a -n run-rdma-tput-experiment --options $SHORT --longoptions $LONG -- "$@")
 
 VALID_ARGUMENTS=$# # Returns the count of arguments that are in short or long options
@@ -32,7 +35,7 @@ fi
 eval set -- "$OPTS"
 
 #default values
-exp="rdma-test"
+exp="benny-test"
 server="192.168.11.116"
 client="192.168.11.117"
 server_intf="ens2f1"
@@ -46,7 +49,10 @@ dur=15
 cpu_mask="4,8,12,16"
 mlc_cores="none"
 mlc_dur=100
-num_runs=2
+ring_buffer=1024
+buf=1
+bandwidth="100g"
+num_runs=1
 home="/home/benny"
 setup_dir=$home/hostCC/utils
 exp_dir=$home/hostCC/utils/tcp
@@ -114,6 +120,18 @@ do
       mlc_cores="$2"
       shift 2
       ;;
+    --ring_buffer )
+      ring_buffer="$2"
+      shift 2
+      ;;
+    --buf )
+      buf="$2"
+      shift 2
+      ;;
+    -b | --bandwidth )
+      bandwidth="$2"
+      shift 2
+      ;;
     -h | --help)
       help
       ;;
@@ -177,7 +195,7 @@ fi
 #### setup and start servers
 echo "setting up server config..."
 cd $setup_dir
-sudo bash setup-envir.sh -i $server_intf -a $server -m $mtu -d $ddio -f 1 -r 0 -p 0 -e 1 -b 1 -o 1
+sudo bash setup-envir.sh -i $server_intf -a $server -m $mtu -d $ddio --ring_buffer $ring_buffer --buf $buf -f 1 -r 0 -p 0 -e 1 -b 1 -o 1
 cd -
 
 echo "starting server instances..."
@@ -188,7 +206,7 @@ cd -
 
 #### setup and start clients
 echo "setting up and starting clients..."
-sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' -f 1 -r 0 -p 0 -e 1 -b 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-RUN-'$j' -p '$init_port' -c '$cpu_mask'; exec bash"'
+sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' --ring_buffer '$ring_buffer' --buf '$buf' -f 1 -r 0 -p 0 -e 1 -b 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-RUN-'$j' -p '$init_port' -c '$cpu_mask' -b '$bandwidth'; exec bash"'
 
 
 #### warmup
@@ -198,12 +216,12 @@ progress_bar 10 1
 #record stats
 ##start sender side logging
 echo "starting logging at client..."
-sshpass -p $password ssh $uname@$addr 'screen -dmS logging_session sudo bash -c "cd '$setup_dir'; sudo bash record-host-metrics.sh -t 1 -i '$client_intf' -o '$exp-RUN-$j' --type 0 --cpu_util 1 --retx 1 --pcie 0 --membw 0 --dur '$dur' --cores '$cpu_mask' ; exec bash"'
+sshpass -p $password ssh $uname@$addr 'screen -dmS logging_session sudo bash -c "cd '$setup_dir'; sudo bash record-host-metrics.sh -f 1 -t 1 -i '$client_intf' -o '$exp-RUN-$j' --type 0 --cpu_util 1 --retx 1 --pcie 0 --membw 0 --dur '$dur' --cores '$cpu_mask' ; exec bash"'
 
 ##start receiver side logging
 echo "starting logging at server..."
 cd $setup_dir
-sudo bash record-host-metrics.sh -t 1 -i $server_intf -o $exp-RUN-$j --type 0 --cpu_util 1 --pcie 1 --membw 1 --dur $dur --cores $cpu_mask
+sudo bash record-host-metrics.sh -f 1 -t 1 -i $server_intf -o $exp-RUN-$j --type 0 --cpu_util 1 --pcie 1 --membw 1 --dur $dur --cores $cpu_mask
 echo "done logging..."
 cd -
 
@@ -229,7 +247,7 @@ else
     #### setup and start servers
     echo "setting up server config..."
     cd $setup_dir
-    sudo bash setup-envir.sh -i $server_intf -a $server -m $mtu -d $ddio -f 1 -r 0 -p 0 -e 1 -b 1 -o 1
+    sudo bash setup-envir.sh -i $server_intf -a $server -m $mtu -d $ddio --ring_buffer $ring_buffer --buf $buf -f 1 -r 0 -p 0 -e 1 -b 1 -o 1
     cd -
 
     echo "starting server instances..."
@@ -240,7 +258,7 @@ else
 
     #### setup and start clients
     echo "setting up and starting clients..."
-    sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' -f 1 -r 0 -p 0 -e 1 -b 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-MLCRUN-'$j' -p '$init_port' -c '$cpu_mask'; exec bash"'
+    sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' --ring_buffer '$ring_buffer' --buf '$buf' -f 1 -r 0 -p 0 -e 1 -b 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-MLCRUN-'$j' -p '$init_port' -c '$cpu_mask' -b '$bandwidth'; exec bash"'
 
     #### start MLC
     echo "starting MLC..."
