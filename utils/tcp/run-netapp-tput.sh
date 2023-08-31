@@ -36,7 +36,6 @@ num_clients=4
 port=3000
 bandwidth="100g"
 
-IFS=',' read -ra core_values <<< $cores
 
 
 while :
@@ -87,6 +86,8 @@ do
       ;;
   esac
 done
+
+IFS=',' read -ra core_values <<< $cores
 
 mkdir -p ../reports #Directory to store collected logs
 mkdir -p ../reports/$outdir #Directory to store collected logs

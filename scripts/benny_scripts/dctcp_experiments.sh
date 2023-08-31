@@ -37,3 +37,8 @@ sudo bash run-dctcp-tput-experiment.sh -E "memory_contention-3" -M 4000 --num_se
 sudo bash run-dctcp-tput-experiment.sh -E "ring_buffer-512" -M 4000 --num_servers 4 --num_clients 4 -c "4,8,12,16" --ring_buffer 512 --buf 1 --mlc_cores 'none' --bandwidth "100g" --server_intf ens2f1np1
 sudo bash run-dctcp-tput-experiment.sh -E "ring_buffer-256" -M 4000 --num_servers 4 --num_clients 4 -c "4,8,12,16" --ring_buffer 256 --buf 1 --mlc_cores 'none' --bandwidth "100g" --server_intf ens2f1np1
 sudo bash run-dctcp-tput-experiment.sh -E "ring_buffer-2048" -M 4000 --num_servers 4 --num_clients 4 -c "4,8,12,16" --ring_buffer 2048 --buf 1 --mlc_cores 'none' --bandwidth "100g" --server_intf ens2f1np1
+
+# number of flows 
+sudo bash run-dctcp-tput-experiment.sh -E "baseline" -M 4000 --num_servers 1 --num_clients 1 -c "4" --ring_buffer 1024 --buf 1 --mlc_cores 'none' --bandwidth "100g" --server_intf ens2f1np1
+sudo bash run-dctcp-tput-experiment.sh -E "baseline" -M 4000 --num_servers 2 --num_clients 2 -c "4,8" --ring_buffer 1024 --buf 1 --mlc_cores 'none' --bandwidth "100g" --server_intf ens2f1np1
+sudo bash run-dctcp-tput-experiment.sh -E "baseline" -M 4000 --num_servers 3 --num_clients 3 -c "4,8,12" --ring_buffer 1024 --buf 1 --mlc_cores 'none' --bandwidth "100g" --server_intf ens2f1np1

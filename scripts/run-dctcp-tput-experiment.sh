@@ -166,6 +166,8 @@ function progress_bar() {
 function cleanup() {
     sudo pkill -9 -f loaded_latency
     sudo pkill -9 -f iperf
+    rm -f $home/hostCC/utils/out.perf-folded
+    rm -f $home/hostCC/utils/perf.data
     sshpass -p $password ssh $uname@$addr 'screen -S $(screen -list | awk "/\\.client_session\t/ {print \$1}") -X quit'
     sshpass -p $password ssh $uname@$addr 'screen -S $(screen -list | awk "/\\.logging_session\t/ {print \$1}") -X quit'
     sshpass -p $password ssh $uname@$addr 'screen -wipe'
