@@ -4,40 +4,158 @@
 <head>
     <title>hostCC Dashboard</title>
     <!-- <link rel="stylesheet" type="text/css" href="styles.css"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f2f2f2;
         }
 
         .dashboard {
+            background-color: #c6c5dc;
+            /* display: grid; */
+            /* grid-template-columns: repeat(2, 1fr); */
+            /* grid-gap: 20px; */
+            margin: 5px;
+        }
+
+        .dashboard-title {
+            font-size: 26px;
+            margin: 0;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .dashboard-subtitle {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .sidebar {
+            flex: 20%;
+            /* width: 20%; */
+            padding: 20px;
+            background-color: #fff;
+        }
+
+        .main-content {
+            flex: 70%;
+            padding: 20px;
+            /* width: 70%; */
+            display: flex;
+            justify-content: right;
+            align-items: center;
+            overflow: auto;
+        }
+
+        .plot-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-gap: 20px;
-            margin: 20px;
+            /* grid-template-columns: repeat(auto-fit, minmax(calc(50% - 10px), 1fr)); */
+            grid-template-columns: repeat(auto-fit, minmax(calc(100% - 10px), 1fr));
+            /* grid-gap: 5px; */
+            grid-gap: 0px;
         }
 
         .plot {
             background-color: #ffffff;
             border: 1px solid #ddd;
-            padding: 20px;
+            padding: 5px;
             box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 3px;
+            margin-bottom: 0px;
+            /* max-height: calc(45vh - 10px); */
+            max-height: calc(30vh - 10px);
+        }
+
+        .image-container {
+            display: flex;
+            justify-content: center; /* Center-align content horizontally */
+            padding: 5px;
+            margin-top: 10px;
+        }
+
+        .fit-to-column {
+            max-width: 62%;
+            height: auto;
         }
 
         .plot-container {
-        background-color: black; /* Set the background color for the plot container */
+            background-color: white;
+            margin-top: 0; /* Adjust this value to reduce the top margin */
         }
 
-        .buttons {
+        .plot-container .plotly .main-svg text.title-text {
+            font-size: 18px; /* Adjust the font size as needed */
+            margin: 0; /* Adjust this value to reduce the title margin */
+        }
+
+        .section {
             display: flex;
-            align-items: center; /* Vertically center elements */
+            flex-direction: column; /* Display div elements in a column layout */
+            align-items: center;
             justify-content: center;
             text-align: center;
-            margin-top: 20px;
-            margin-left: 20px;
-            margin-right: 20px;
+            margin-left: 0px;
+            margin-right: 10px;
+            border-bottom: 1px solid #ccc; /* Add a border to separate sections */
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            background-color: rgb(178, 176, 232);
+        }
+
+        .section-title {
+            margin-top: 0; /* Adjust this value as needed to reduce the top margin */
+        }
+
+        .netapp-section {
+            display: flex;
+            flex-direction: column; /* Display div elements in a column layout */
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-left: 0px;
+            margin-right: 10px;
+            border-bottom: 1px solid #ccc; /* Add a border to separate sections */
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            background-color: rgb(195, 232, 176);
+        }
+
+        .mapp-section {
+            display: flex;
+            flex-direction: column; /* Display div elements in a column layout */
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-left: 0px;
+            margin-right: 10px;
+            border-bottom: 1px solid #ccc; /* Add a border to separate sections */
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            background-color: rgb(239, 217, 168);
+        }
+
+        .hostcc-section {
+            display: flex;
+            flex-direction: column; /* Display div elements in a column layout */
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-left: 0px;
+            margin-right: 10px;
+            border-bottom: 1px solid #ccc; /* Add a border to separate sections */
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            background-color: rgb(204, 203, 232);
         }
 
         .slider-container {
@@ -47,9 +165,24 @@
             margin-left: 20px; /* Add some spacing between label/slider and button */
         }
 
+        .textbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px; /* Add spacing between the textbox and buttons */
+        }
+
+        .textbox-label {
+            margin-left: 10px; /* Add spacing between the label and textbox */
+            margin-right: 20px; /* Add spacing between the label and textbox */
+        }
+
+        #core-count {
+            width: 40px; /* Adjust the width as needed */
+        }
+
         button {
             padding: 10px 20px;
-            background-color: #007bff;
+            background-color: rgb(0, 123, 255);
             color: #ffffff;
             border: none;
             cursor: pointer;
@@ -69,12 +202,14 @@
         }
 
         launchbutton {
-            padding: 10px 20px;
+            padding: 10px 10px;
             background-color: #e68517;
             color: #ffffff;
             border: none;
             cursor: pointer;
             margin-right: 10px; /* Adjust this value as needed */
+            margin-top: 10px; /* Adjust this value as needed */
+            margin-bottom: 10px; /* Adjust this value as needed */
         }
         launchbutton:hover {
             background-color: #b96c13;
@@ -94,12 +229,14 @@
         }
 
         loadbutton {
-            padding: 10px 20px;
+            padding: 10px 10px;
             background-color: #0fad1a;
             color: #ffffff;
             border: none;
             cursor: pointer;
             margin-right: 10px; /* Adjust this value as needed */
+            margin-top: 10px; /* Adjust this value as needed */
+            margin-bottom: 10px; /* Adjust this value as needed */
         }
         loadbutton:hover {
             background-color: #0b8813;
@@ -108,43 +245,158 @@
         button:hover {
             background-color: #0056b3;
         }
+
+        button,
+        killbutton,
+        launchbutton,
+        unloadbutton,
+        loadbutton {
+            padding: 5px 0px;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+            width: 70px; /* Set a fixed width for all buttons */
+            text-align: center; /* Center-align the text within the button */
+        }
+
+        .column {
+        float: left;
+        width: 50%;
+        }
+
+        /* Clear floats after the columns */
+        .column {
+        float: left;
+        }
+
+        .left {
+        width: 21%;
+        }
+
+        .right {
+        width: 77%;
+        }
+
+        .checkboxes {
+            padding-bottom: 20px; /* Add padding between checkboxes and the next element */
+        }
+
+        .checkboxes label {
+            display: flex; /* Use flexbox to align items horizontally */
+            align-items: center; /* Center items vertically */
+            margin-bottom: -4px; /* Add spacing between checkboxes */
+        }
+
+        .checkboxes label input[type="checkbox"] {
+            margin-right: 10px; /* Add spacing between checkbox and label */
+        }
+
+        label {
+            margin-right: 5px; /* Adjust the value as needed */
+        }
+        .centered-label {
+            display: flex; /* Use flexbox to align items horizontally */
+            align-items: center; /* Center-align items horizontally */
+        }
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-    <div class="buttons">
-        <div class="slider-container">
-            <label for="slider" class="slider-label">Number of MApp cores:</label>
-            <input type="range" id="slider" min="1" max="3" value="1">
-            <span id="slider-value" class="slider-value">1</span>
-        </div>
-        <launchbutton id="button1">Launch MApp</launchbutton>
-        <killbutton id="button2" >Kill MApp</killbutton>
-    </div>
-    <div class="buttons">
-        <div class="checkboxes">
-            <label>
-                <input type="checkbox" id="host-local-checkbox"> Enable Host-local Response
-            </label>
-            <label>
-                <input type="checkbox" id="network-checkbox"> Enable Network Response
-            </label>
-        </div>
-        <div class="slider-container">
-            <label for="slider2" class="slider-label">Target Network Bandwidth (Gbps):</label>
-            <input type="range" id="slider2" min="10" max="90" step="5" value="80">
-            <span id="slider2-value" class="slider2-value">80</span>
-        </div>
-        <loadbutton id="button3">Load hostCC</loadbutton>
-        <unloadbutton id="button4">Unload hostCC</unloadbutton>
-    </div>
     <div class="dashboard">
-        <div class="plot" id="pcie-plot"></div>
-        <div class="plot" id="drop-rates-plot"></div>
-        <div class="plot" id="membw-plot"></div>
-        <div class="plot" id="iio-occ-plot"></div>
-        <!-- <div class="plot" id="cpu-plot"></div> -->
+        <div class="header">
+            <h4 class="dashboard-title">Host Congestion Control Demonstration</h4>
+        </div>
+        <div class="column left">
+            <div class="netapp-section">
+                <h3 class="section-title"> Throughput Sensitive <br> Network Application </h3>
+                <div class="slider-container">
+                    <label for="slider3" class="slider-label">Number of cores:</label>
+                    <input type="range" id="slider3" min="1" max="6" value="4">
+                    <span id="slider3-value" class="slider3-value">4</span>
+                </div>
+                <div class="slider-container"> 
+                <launchbutton id="button5">Launch</launchbutton>
+                <killbutton id="button6" >Stop</killbutton>
+                </div>
+            </div>
+            <div class="netapp-section">
+                <h3 class="section-title"> Latency Sensitive <br> Network Application </h3>
+                <div class="textbox-container">
+                    <label for="core-count" class="slider-label">Request Size (Bytes):</label>
+                    <input type="number" id="core-count" min="1" max="1048576" value="128">
+                </div>
+                <div class="slider-container">
+                <launchbutton id="button7">Launch</launchbutton>
+                <killbutton id="button8" >Stop</killbutton>
+                 </div>
+            </div>
+            <div class="mapp-section">
+                <h3 class="section-title"> Host-Local Application </h3>
+                <div class="slider-container">
+                    <label for="slider" class="slider-label">Number of cores:</label>
+                    <input type="range" id="slider" min="1" max="3" value="3">
+                    <span id="slider-value" class="slider-value">3</span>
+                </div>
+                <div class="slider-container">
+                <launchbutton id="button1">Launch</launchbutton>
+                <killbutton id="button2" >Stop</killbutton>
+                </div>
+            </div>
+            <div class="hostcc-section">
+                <h3 class="section-title"> hostCC controls </h3>
+                <div class="checkboxes">
+                    <label class="centered-label">
+                        <input type="checkbox" id="host-local-checkbox"> Host-local congestion response
+                    </label>
+                    <br>
+                    <label class="centered-label">
+                        <input type="checkbox" id="network-checkbox"> Network congestion response using host congestion signals
+                    </label>
+                </div>
+                <div class="slider-container">
+                    <label for="slider2" class="slider-label">Target Network Bandwidth (Gbps):</label>
+                    <input type="range" id="slider2" min="10" max="90" step="5" value="80">
+                    <span id="slider2-value" class="slider2-value">80</span>
+                </div>
+                <div class="slider-container">
+                <!-- <loadbutton id="button3">Load hostCC</loadbutton> -->
+                <launchbutton id="button3">Load</launchbutton>
+                <!-- <unloadbutton id="button4">Unload hostCC</unloadbutton> -->
+                <killbutton id="button4">Unload</killbutton>
+                </div>
+            </div>
+        </div>
+        <div class="column right">
+            <!-- <div class="image-container"> 
+                <img id="dynamic-image" src="/static/no-traffic.jpeg" alt="Dynamic Image" class="fit-to-column">
+            </div> -->
+            <div class="plot-grid">
+                <div class="plot plot-container" id="pcie-plot"></div>
+                <div class="plot" id="latencies-plot"></div>
+                <div class="plot" id="drop-rates-plot"></div>
+                <div class="plot" id="membw-plot"></div>
+                <!-- <div class="plot" id="iio-occ-plot"></div> -->
+                <!-- <div class="plot" id="cpu-plot"></div> -->
+            </div>
+        </div>
     </div>
+
+
+
+    <!-- <div class="row">
+        <div class="column left"> <p> text sdlkjhkjsdh glskgjh skjlfgh lksfg lfkgj lkdfj ldf gd hdhggdhgfjhfj hj hgjk gjk jgk kdf jhlkfdj hlkgdjh kdhj kldgj hgd1 dssd gl lsjgh lsfgh flskgj lkfjg lkflkgj lkfjg lkfjglk jdflkgj lkdfjg lkdfjg lkdfj </p></div>
+        <div class="column right">  <p> text sdlkjhkjsdh glskgjh skjlfgh lksfg lfkgj lkdfj ldf gd hdhggdhgfjhfj hj hgjk gjk jgk kdf jhlkfdj hlkgdjh kdhj kldgj hgd1 </p></div>
+      </div> -->
+
+
+
+
+
+
+
+
+
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -160,27 +412,76 @@
                 slider2Value.textContent = slider2.value;
             });
 
+            const slider3 = document.getElementById('slider3');
+            const slider3Value = document.getElementById('slider3-value');
+            slider3.addEventListener('input', function () {
+                slider3Value.textContent = slider3.value;
+            });
+
+            const textbox = document.getElementById('core-count');
+
             const hostLocalCheckbox = document.getElementById('host-local-checkbox');
             const networkCheckbox= document.getElementById('network-checkbox');
 
             document.getElementById('button1').addEventListener('click', function () {
                 const sliderVal = slider.value;
+                const imageElement = document.getElementById('dynamic-image');
                 launchMlcScript('launch-mlc',sliderVal);
+                imageElement.src = '/static/host-congestion-classical-cc.jpeg';
             });
             
             document.getElementById('button2').addEventListener('click', function () {
+                const imageElement = document.getElementById('dynamic-image');
                 killMlcScript('kill-mlc');
+                imageElement.src = '/static/no-host-congestion.jpeg';
+            });
+
+            document.getElementById('button5').addEventListener('click', function () {
+                const slider3Val = slider3.value;
+                const imageElement = document.getElementById('dynamic-image');
+                launchIperfScript('launch-iperf',slider3Val);
+                imageElement.src = '/static/no-host-congestion.jpeg';
+            });
+            
+            document.getElementById('button6').addEventListener('click', function () {
+                const imageElement = document.getElementById('dynamic-image');
+                killIperfScript('kill-iperf');
+                imageElement.src = '/static/no-traffic.jpeg';
+            });
+
+            document.getElementById('button7').addEventListener('click', function () {
+                const textboxVal= textbox.value;
+                launchNetperfScript('launch-netperf',textboxVal);
+            });
+            
+            document.getElementById('button8').addEventListener('click', function () {
+                killNetperfScript('kill-netperf');
             });
 
             document.getElementById('button3').addEventListener('click', function () {
                 const slider2Val = slider2.value;
+                const imageElement = document.getElementById('dynamic-image');
                 const hostLocalCheckboxVal = hostLocalCheckbox.checked; // true if checked, false if not checked
                 const networkCheckboxVal = networkCheckbox.checked; // true if checked, false if not checked
                 loadHostCCScript('load-hostcc',slider2Val,hostLocalCheckboxVal,networkCheckboxVal);
+                if (hostLocalCheckboxVal && networkCheckboxVal){
+                    imageElement.src = '/static/hostcc-network-local.jpeg';
+                }
+                else if(hostLocalCheckboxVal){
+                    imageElement.src = '/static/hostcc-local.jpeg';
+                }
+                else if(networkCheckboxVal){
+                    imageElement.src = '/static/hostcc-network.jpeg';
+                }
+                else{
+                    imageElement.src = '/static/host-congestion-classical-cc.jpeg';
+                }
             });
             
             document.getElementById('button4').addEventListener('click', function () {
+                const imageElement = document.getElementById('dynamic-image');
                 unloadHostCCScript('unload-hostcc');
+                imageElement.src = '/static/host-congestion-classical-cc.jpeg';
             });
         });
     
@@ -200,6 +501,62 @@
 
         function killMlcScript(scriptName) {
             fetch('/kill-mlc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+
+        function launchIperfScript(scriptName, sliderVal) {
+            fetch('/launch-iperf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName, slider: sliderVal })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+
+        function killIperfScript(scriptName) {
+            fetch('/kill-iperf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+
+        function launchNetperfScript(scriptName, textboxVal) {
+            fetch('/launch-netperf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName, textbox: textboxVal })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
+
+        function killNetperfScript(scriptName) {
+            fetch('/kill-netperf', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -253,17 +610,24 @@
                         x: data.timestamps.map(ts => new Date(ts * 1000)),
                         y: data.utilizations,
                         fill: 'tozeroy',  // Fill the area below the line with color
-                        fillcolor: 'rgba(0, 100, 80, 0.6)',  // Specify the fill color
-                        line: { color: 'rgb(0, 100, 80)' },  // Line color
+                        fillcolor: 'rgba(0, 100, 80, 0.9)',  // Specify the fill color
+                        line: { color: 'rgb(0, 100, 80)', width: 4 },  // Line color
                         type: 'scatter',
                     };
                     var layout = {
+                        font: {
+                        family: 'Roboto, sans-serif' // Replace 'YourFontFamily' with the desired font name
+                    },
                         title: `CPU Utilization vs Time`,
                         xaxis: { title: 'Time (HH:MM:SS)',
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                        yaxis: { title: 'CPU Utilization', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                        yaxis: { title: 'CPU Utilization', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'rgb(198, 196, 232)',
+                        margin: {
+                        t: 60, // Adjust this value to reduce the gap
+                        b: 60,
+                    },
                     };
                     Plotly.newPlot('cpu-plot', [trace], layout);
                 });
@@ -285,17 +649,25 @@
                     x: data.timestamps.map(ts => new Date(ts * 1000)),
                     y: data.pcie_bws,
                     fill: 'tozeroy',  // Fill the area below the line with color
-                    fillcolor: 'rgba(0, 100, 80, 0.6)',  // Specify the fill color
-                    line: { color: 'rgb(0, 100, 80)' },  // Line color
+                    fillcolor: 'rgba(0, 150, 30, 0.9)',  // Specify the fill color
+                    line: { color: 'rgb(0, 100, 80)', width: 4 },  // Line color
                     type: 'scatter'
                 };
                 var layout = {
+                    font: {
+                        family: 'Roboto, sans-serif' // Replace 'YourFontFamily' with the desired font name
+                    },
                     title: `Network Throughput (Gbps) vs Time`,
                     xaxis: { title: 'Time (HH:MM:SS)',
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'Network Throughput', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                    yaxis: { title: 'Network Throughput', range: [0, 100], tickvals: [0, 20, 40, 60, 80, 100]}, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)', 
+                    // height: '10%',
+                    margin: {
+                        t: 60, // Adjust this value to reduce the gap
+                        b: 60,
+                    },
                 };
                 Plotly.newPlot('pcie-plot', [trace], layout);
             });
@@ -317,17 +689,24 @@
                     x: data.timestamps.map(ts => new Date(ts * 1000)),
                     y: data.mem_bws,
                     fill: 'tozeroy',  // Fill the area below the line with color
-                    fillcolor: 'rgba(40, 60, 110, 0.6)',  // Specify the fill color
-                    line: { color: 'rgb(40, 60, 110)' },  // Line color
+                    fillcolor: 'rgba(60, 150, 170, 0.9)',  // Specify the fill color
+                    line: { color: 'rgb(50, 50, 170)', width: 4 },  // Line color
                     type: 'scatter'
                 };
                 var layout = {
-                    title: `MemBW Utilization (%) vs Time`,
+                    font: {
+                        family: 'Roboto, sans-serif' // Replace 'YourFontFamily' with the desired font name
+                    },
+                    title: `Memory Bandwidth Utilization (%) vs Time`,
                     xaxis: { title: 'Time (HH:MM:SS)',
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'MemBW Utilization (%)', range: [0, 100]}, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                    yaxis: { title: 'MemBW Utilization (%)', range: [0, 100]}, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    margin: {
+                        t: 60, // Adjust this value to reduce the gap
+                        b: 60,
+                    },
                 };
                 Plotly.newPlot('membw-plot', [trace], layout);
             });
@@ -349,17 +728,24 @@
                     x: data.timestamps.map(ts => new Date(ts * 1000)),
                     y: data.drop_rates,
                     fill: 'tozeroy',  // Fill the area below the line with color
-                    fillcolor: 'rgba(100, 20, 20, 0.6)',  // Specify the fill color
-                    line: { color: 'rgb(100, 20, 20)' },  // Line color
+                    fillcolor: 'rgba(255, 71, 76, 0.9)',  // Specify the fill color
+                    line: { color: 'rgb(100, 20, 20)', width: 4 },  // Line color
                     type: 'scatter'
                 };
                 var layout = {
+                    font: {
+                        family: 'Roboto, sans-serif' // Replace 'YourFontFamily' with the desired font name
+                    },
                     title: `Drop Rate (%) vs Time`,
                     xaxis: { title: 'Time (HH:MM:SS)',
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'Drop Rate (%)', type: 'log', autorange: false, range: [-5, 1]  }, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                    yaxis: { title: 'Drop Rate (%)', type: 'log', autorange: false, range: [-5, 1]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    margin: {
+                        t: 60, // Adjust this value to reduce the gap
+                        b: 60,
+                    },
                 };
                 Plotly.newPlot('drop-rates-plot', [trace], layout);
             });
@@ -370,6 +756,95 @@
     setInterval(() => updateDropRatesPlot(200), 1000);  // Change N value here as well
 </script>
 
+<!-- <div id="latencies-plot"></div> -->
+
+<script>
+    function updateLatenciesPlot(n) {
+        fetch(`/get_last_n_latency_data/${n}`)
+            .then(response => response.json())
+            .then(data => {
+                var lineColors = ['rgb(0, 100, 0)', 'rgb(0, 128, 0)', 'rgb(0, 160, 0)'];
+
+                var trace3 = {
+                    x: data.timestamps.map(ts => new Date(ts * 1000)),
+                    y: data.p9999_latencies,
+                    fill: 'tozeroy',  // Fill the area below the line with color
+                    fillcolor: 'rgba(0, 210, 0, 0.9)', // Lighter shade of green (adjust alpha value)
+                    line: { color: lineColors[2], width: 4 },
+                    type: 'scatter',
+                    name: 'P99.99 Latency'
+                };
+
+               var trace2 = {
+                    x: data.timestamps.map(ts => new Date(ts * 1000)),
+                    y: data.p999_latencies,
+                    fill: 'tozeroy',  // Fill the area below the line with color
+                    fillcolor: 'rgba(0, 140, 0, 0.9)', // Lighter shade of green (adjust alpha value)
+                    line: { color: lineColors[1], width: 4 },
+                    type: 'scatter',
+                    name: 'P99.9 Latency'
+                };
+
+                var trace1 = {
+                    x: data.timestamps.map(ts => new Date(ts * 1000)),
+                    y: data.p99_latencies,
+                    fill: 'tozeroy',  // Fill the area below the line with color
+                    fillcolor: 'rgba(0, 70, 0, 0.9)', // Lighter shade of green (adjust alpha value)
+                    line: { color: lineColors[0], width: 4 },
+                    type: 'scatter',
+                    name: 'P99 Latency'
+                };
+
+
+                // var trace = {
+                //     x: data.timestamps.map(ts => new Date(ts * 1000)),
+                //     y: data.p99_latencies,
+                //     fill: 'tozeroy',  // Fill the area below the line with color
+                //     fillcolor: 'rgba(255, 71, 76, 0.9)',  // Specify the fill color
+                //     line: { color: 'rgb(100, 20, 20)', width: 4 },  // Line color
+                //     type: 'scatter'
+                // };
+                var layout = {
+                    font: {
+                        family: 'Roboto, sans-serif' // Replace 'YourFontFamily' with the desired font name
+                    },
+                    title: `Latency (us) vs Time`,
+                    xaxis: { title: 'Time (HH:MM:SS)',
+                        range: [new Date() - 120000, new Date()], // Set fixed 60-second range
+                        type: 'date' // Specify the x-axis type as date 
+                    },
+                    yaxis: { title: 'Latency (us)', type: 'log', autorange: false, range: [1, 6]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    // yaxis: { title: 'Latency (us)',  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    margin: {
+                        t: 60, // Adjust this value to reduce the gap
+                        b: 60,
+                    },
+                    legend: {
+                        x: 0.2,  // Adjust the x position (centered)
+                        y: 1.0,  // Adjust the y position (above the plot)
+                        traceorder: "reversed", // Display legend items in the specified order
+                        // bordercolor: 'black', // Add a border around the legend
+                        // borderwidth: 1,       // Set the border width
+                        xanchor: "center",    // Center the legend
+                        yanchor: "bottom",    // Anchor to the top
+                        orientation: "h",     // Display legend horizontally
+                        xgap: 5,              // Adjust horizontal gap between legend items
+                        ygap: 5,              // Adjust vertical gap between legend items
+                        // bgcolor: 'white',     // Set legend background color
+                        font: { size: 11 }    // Adjust font size
+                    },
+                };
+                Plotly.newPlot('latencies-plot', [trace3, trace2, trace1], layout);
+            });
+    }
+
+    // Call the function with the desired N value
+    updateLatenciesPlot(200);  // Change this to your desired N value
+    setInterval(() => updateLatenciesPlot(200), 1000);  // Change N value here as well
+</script>
+
+<!-- <div id="iio-occ-plot"></div> -->
+
 <script>
     function updateIIOOccPlot(n) {
         fetch(`/get_last_n_iio_data/${n}`)
@@ -379,17 +854,24 @@
                     x: data.timestamps.map(ts => new Date(ts * 1000)),
                     y: data.iio_occs,
                     fill: 'tozeroy',  // Fill the area below the line with color
-                    fillcolor: 'rgba(249, 115, 6, 0.6)',  // Specify the fill color
-                    line: { color: 'rgb(249, 115, 6)' },  // Line color
+                    fillcolor: 'rgba(249, 170, 50, 0.9)',  // Specify the fill color
+                    line: { color: 'rgb(249, 115, 6)', width: 4 },  // Line color
                     type: 'scatter'
                 };
                 var layout = {
+                    font: {
+                        family: 'Roboto, sans-serif' // Replace 'YourFontFamily' with the desired font name
+                    },
                     title: `IIO Occupancy (cachelines) vs Time`,
                     xaxis: { title: 'Time (HH:MM:SS)',
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'IIO Occupancy \n (99.9p over 1s interval)', range: [0, 100]  }, plot_bgcolor: 'lightyellow',paper_bgcolor: 'white'
+                    yaxis: { title: 'IIO Occupancy \n (99.9p over 1s interval)', range: [0, 100]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    margin: {
+                        t: 60, // Adjust this value to reduce the gap
+                        b: 60,
+                    },
                 };
                 Plotly.newPlot('iio-occ-plot', [trace], layout);
             });

@@ -13,7 +13,7 @@ def create_database():
     if not os.path.exists(DATABASE):
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE cpu_data
+        cursor.execute('''CREATE TABLE drops_data
                         (id INTEGER PRIMARY KEY AUTOINCREMENT,
                         timestamp INTEGER,
                         drop_rate REAL)''')

@@ -30,7 +30,7 @@
 #define IIO_PCIE_1_PORT_0_BW_IN 0x0B20 //We're concerned with PCIe 1 stack on our machine (Table 1-11 in Intel Skylake Manual)
 #define STACK 2 //We're concerned with stack #2 on our machine
 #define IRP_OCC_VAL 0x0040040F
-#define CORE 28
+#define CORE 20
 #define NUM_LPROCS 64
 
 int msr_fd[NUM_LPROCS];		// msr device driver files will be read from various functions, so make descriptors global
