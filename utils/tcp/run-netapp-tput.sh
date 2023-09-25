@@ -9,12 +9,13 @@ help()
                [ -p | --port (port number for the first connection) ]
                [ -a | --addr (ip address of the server, only use this option at client) ]
                [ -c | --cores (comma separated cpu core values to run the clients/servers at, for eg., cpu=4,8,12,16; if the number of clients/servers > the number of input cpu cores, the clients/servers will round-robin over the provided input cores; recommended to run on NUMA node local to the NIC for maximum performance) ]
+	       [ -P | --prefix (prefix to the iperf command)] 
                [ -h | --help  ]"
     exit 2
 }
 
-SHORT=m:,o:,S:,C:,p:,a:,c:h
-LONG=mode:,outdir:,num_servers:,num_clients:,port:,addr:,cores:,help
+SHORT=m:,o:,S:,C:,p:,a:,c:,P:,h
+LONG=mode:,outdir:,num_servers:,num_clients:,port:,addr:,cores:,prefix:,help
 OPTS=$(getopt -a -n run-netapp-tput --options $SHORT --longoptions $LONG -- "$@")
 
 VALID_ARGUMENTS=$# # Returns the count of arguments that are in short or long options
@@ -33,8 +34,8 @@ cores="4,8,12,16"
 num_servers=4
 num_clients=4
 port=3000
+prefix=""
 
-IFS=',' read -ra core_values <<< $cores
 
 
 while :
@@ -68,6 +69,10 @@ do
       cores="$2"
       shift 2
       ;;
+    -P | --prefix )
+      prefix="$2"
+      shift 2
+      ;;
     -h | --help)
       help
       ;;
@@ -82,6 +87,7 @@ do
   esac
 done
 
+IFS=',' read -ra core_values <<< $cores
 mkdir -p ../reports #Directory to store collected logs
 mkdir -p ../reports/$outdir #Directory to store collected logs
 mkdir -p ../logs #Directory to store collected logs
@@ -101,7 +107,7 @@ then
         index=$(( counter % ${#core_values[@]} ))
         core=${core_values[index]}
         echo "Starting server $counter on core $core"
-        taskset -c $core nice -n -20 iperf3 -s --port $(($port + $counter)) -i 30 -f m --logfile ../logs/$outdir/iperf.bw.log &
+        sudo $prefix taskset -c $core nice -n -20 iperf3 -s --port $(($port + $counter)) -i 30 -f m --logfile ../logs/$outdir/iperf.bw.log &
         ((counter++))
     done
     echo "waiting for few minutes before collecting stats..."
@@ -115,7 +121,7 @@ then
         index=$(( counter % ${#core_values[@]} ))
         core=${core_values[index]}
         echo "Starting client $counter on core $core"
-        taskset -c $core nice -n -20 iperf3 -c $addr --port $(($port+$(($counter%$num_servers)))) -t 10000 -C dctcp &
+        sudo $prefix taskset -c $core nice -n -20 iperf3 -c $addr --port $(($port+$(($counter%$num_servers)))) -t 10000 -C dctcp &
         ((counter++))
     done
 else
