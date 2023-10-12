@@ -5,7 +5,7 @@
 #include "hostcc-logging.h"
 
 module_param(target_pid, int, 0);
-module_param(target_pcie_thresh, int, 0);
+module_param(target_pcie_thresh, int, 0644);
 module_param(target_iio_wr_thresh, int, 0);
 module_param(target_iio_rd_thresh, int, 0);
 module_param(enable_network_response, int, 0);
@@ -23,6 +23,28 @@ extern int mode;
 
 int enable_local_response = 1;
 int enable_network_response = 1;
+
+static ssize_t target_pcie_thresh_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
+    sscanf(buf, "%d", &target_pcie_thresh);
+    return count;
+}
+
+static ssize_t target_pcie_thresh_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
+    return sprintf(buf, "%d\n", target_pcie_thresh);
+}
+
+static struct kobj_attribute target_pcie_thresh_attribute = __ATTR(target_pcie_thresh, 0644, target_pcie_thresh_show, target_pcie_thresh_store);
+
+static struct attribute *attrs[] = {
+    &target_pcie_thresh_attribute.attr,
+    NULL,
+};
+
+static struct attribute_group attr_group = {
+    .attrs = attrs,
+};
+
+static struct kobject *my_kobj;
 
 void poll_iio_init(void) {
     //initialize the log
@@ -141,6 +163,15 @@ void thread_fun_poll_pcie(struct work_struct *work) {
 
 static int __init hostcc_init(void) {
   printk("Initializing hostcc");
+  // create sysfs interface for taget_pcie_thresh
+  my_kobj = kobject_create_and_add("hostcc", kernel_kobj);
+  if (!my_kobj)
+      return -ENOMEM;
+
+  if (sysfs_create_group(my_kobj, &attr_group) < 0) {
+      kobject_put(my_kobj);
+      return -ENOMEM;
+  }
   //Start IIO occupancy measurement
   poll_iio_queue = alloc_workqueue("poll_iio_queue",  WQ_HIGHPRI | WQ_CPU_INTENSIVE, 0);
   if (!poll_iio_queue) {
@@ -168,6 +199,8 @@ static int __init hostcc_init(void) {
 }
 
 static void __exit hostcc_exit(void) {
+  sysfs_remove_group(my_kobj, &attr_group);
+  kobject_put(my_kobj);
   terminate_hcc_logging = true;
   msleep(5000);
   terminate_hcc = true;
