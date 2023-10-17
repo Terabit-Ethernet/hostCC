@@ -159,6 +159,11 @@ function parse_pciebw() {
     echo "PCIe_rd_tput: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $5/1000000000.0; n++ } END { if (n > 0) printf "%0.3f", sum / n * 8 ; }') >> reports/$outdir/pcie.rpt
     echo "IOTLB_hits: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $8; n++ } END { if (n > 0) printf "%0.3f", sum / n; }') >> reports/$outdir/pcie.rpt
     echo "IOTLB_misses: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $9; n++ } END { if (n > 0) printf "%0.3f", sum / n; }') >> reports/$outdir/pcie.rpt
+    echo "CTXT_Miss: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $10; n++ } END { if (n > 0) printf "%0.3f", sum / n; }') >> reports/$outdir/pcie.rpt
+    echo "L1_Miss: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $11; n++ } END { if (n > 0) printf "%0.3f", sum / n; }') >> reports/$outdir/pcie.rpt
+    echo "L2_Miss: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $12; n++ } END { if (n > 0) printf "%0.3f", sum / n; }') >> reports/$outdir/pcie.rpt
+    echo "L3_Miss: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $13; n++ } END { if (n > 0) printf "%0.3f", sum / n; }') >> reports/$outdir/pcie.rpt
+    echo "Mem_Read: " $(cat logs/$outdir/pcie.csv | grep "Socket0,IIO Stack 2 - PCIe1,Part0" | awk -F ',' '{ sum += $14; n++ } END { if (n > 0) printf "%0.3f", sum / n; }') >> reports/$outdir/pcie.rpt
 }
 
 function dump_membw() {
@@ -325,4 +330,10 @@ then
     sudo perf record -C $cores -g -F 99 -- sleep $dur
     sudo perf script | $home/FlameGraph/stackcollapse-perf.pl > out.perf-folded
     sudo $home/FlameGraph/flamegraph.pl out.perf-folded > logs/$outdir/perf-kernel-flame.svg
+    # also collect cache miss rates
+    sudo perf stat -C $cores -e LLC-load,LLC-load-misses,l2_rqsts.all_demand_miss,l2_rqsts.all_demand_references -o logs/$outdir/llc.miss.log sleep 2
+    #loadmisses=$(cat logs/$4/$3/llc.miss.log | grep "LLC-load-misses" | awk '{ printf $1 }')
+    #loads=$(cat logs/$4/$3/llc.miss.log | grep "LLC-load " | awk '{ printf $1 }')
+
+
 fi

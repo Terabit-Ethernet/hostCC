@@ -19,11 +19,15 @@
 #define LOG_SIZE 100000
 #define WEIGHT_FACTOR 8
 #define WEIGHT_FACTOR_LONG_TERM 256
-#define IRP_MSR_PMON_CTL_BASE 0x0A5BL
-#define IRP_MSR_PMON_CTR_BASE 0x0A59L
+#define IIO_MSR_PMON_CTL_BASE 0x0A48L
+#define IIO_MSR_PMON_CTR_BASE 0x0A41L
 #define IIO_PCIE_1_PORT_0_BW_IN 0x0B20 //We're concerned with PCIe 1 stack on our machine (Table 1-11 in Intel Skylake Manual)
 #define STACK 2 //We're concerned with stack #2 on our machine
-#define IRP_OCC_VAL 0x0040040F
+#define VTD_OCC_VAL_L4_PAGE_HIT 0x400000400141
+#define VTD_OCC_VAL_L1_MISS 0x400000400441
+#define VTD_OCC_VAL_L2_MISS 0x400000400841
+#define VTD_OCC_VAL_L3_MISS 0x400000401041
+#define VTD_OCC_VAL_TLB_MISS 0x400000402041
 #define CORE 28
 #define NUM_LPROCS 64
 
@@ -98,7 +102,7 @@ extern inline __attribute__((always_inline)) int get_core_number()
 void rdmsr_userspace(int core, uint64_t rd_msr, uint64_t *rd_val_addr){
     rc64 = pread(msr_fd[core],rd_val_addr,sizeof(rd_val_addr),rd_msr);
     if (rc64 != sizeof(rd_val_addr)) {
-        fprintf(log_file,"ERROR: failed to read MSR %x on Logical Processor %d", rd_msr, core);
+        fprintf(log_file,"ERROR: failed to read MSR %lx on Logical Processor %d", rd_msr, core);
         exit(-1);
     }
 }
@@ -123,14 +127,14 @@ static void update_log(int c){
 
 static void update_occ_ctl_reg(void){
 	//program the desired CTL register to read the corresponding CTR value
-	msr_num = IRP_MSR_PMON_CTL_BASE + (0x20 * STACK) + 0;
-    uint64_t wr_val = IRP_OCC_VAL;
+	msr_num = IIO_MSR_PMON_CTL_BASE + (0x20 * STACK) + 0;
+    uint64_t wr_val = VTD_OCC_VAL_L4_PAGE_HIT;
 	wrmsr_userspace(CORE,msr_num,&wr_val);
 }
 
 static void sample_iio_occ_counter(int c){
     uint64_t rd_val = 0;
-	msr_num = IRP_MSR_PMON_CTR_BASE + (0x20 * STACK) + 0;
+	msr_num = IIO_MSR_PMON_CTR_BASE + (0x20 * STACK) + 0;
 	rdmsr_userspace(c,msr_num,&rd_val);
 	cum_occ_sample = rd_val;
 	prev_cum_occ = cur_cum_occ;
@@ -189,7 +193,7 @@ void main_exit() {
     fprintf(log_file,
     "index,latest_tsc,time_delta_ns,avg_occ,s_avg_occ,s_avg_occ_long,cpu\n");
     while(i<LOG_SIZE){
-        fprintf(log_file,"%d,%lld,%lld,%lld,%lld,%lld,%d\n",
+        fprintf(log_file,"%d,%ld,%ld,%ld,%ld,%ld,%d\n",
         i,
         LOG[i].l_tsc,
         LOG[i].td_ns,

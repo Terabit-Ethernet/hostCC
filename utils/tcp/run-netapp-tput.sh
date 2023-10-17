@@ -37,7 +37,6 @@ port=3000
 bandwidth="100g"
 
 
-
 while :
 do
   case "$1" in
@@ -97,7 +96,7 @@ rm ../logs/$outdir/iperf.bw.log
 
 function collect_stats() {
   echo "Collecting app throughput for TCP server..."
-  echo "Avg_iperf_tput: " $(cat ../logs/$outdir/iperf.bw.log | grep "60.*-90.*" | awk  '{ sum += $7; n++ } END { if (n > 0) printf "%.3f", sum/1000; }') > ../reports/$outdir/iperf.bw.rpt
+  echo "Avg_iperf_tput: " $(cat ../logs/$outdir/iperf.bw.log | grep "30.*-60.*" | awk  '{ sum += $7; n++ } END { if (n > 0) printf "%.3f", sum/1000; }') > ../reports/$outdir/iperf.bw.rpt
 }
 
 counter=0
