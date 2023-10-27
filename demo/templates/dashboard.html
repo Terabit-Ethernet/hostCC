@@ -400,6 +400,45 @@
         text-align: left; /* Right-align the text */
     }
 
+    div.cursors div {
+        position: absolute;
+        top: 300px;
+        left: 300px;
+        width: 150px;
+        height: 150px;
+        background-color: rgba(240, 230, 140, 0.2); /* khaki with 0.6 opacity */
+        border: 4px solid rgba(0, 0, 255, 0.4); /* Blue border with 0.4 opacity */
+        border-radius: 50%;
+        z-index: 10000;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+    }
+
+    .cursor,
+    .circle {
+        position: absolute;
+        top: 300px;
+        left: 300px;
+        width: 32px;
+        height: 32px;
+        background-color: khaki;
+        border-radius: 50%;
+        z-index: 10000;
+        pointer-events: none;
+    }
+
+    .cursor#main {
+        position: absolute;
+        top: 300px;
+        left: 300px;
+        width: 32px;
+        height: 32px;
+        background-color: khaki;
+        border-radius: 50%;
+        z-index: 10000;
+        pointer-events: none;
+    }
+
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
@@ -505,6 +544,17 @@
             </div>
         </div>
     </div>
+
+    <div class="cursors">
+        <div></div>
+        <!-- <div></div>
+        <div></div>
+        <div></div>
+        <div></div> -->
+    </div>
+    <!-- <div class="cursor" id="main">
+        Move Your Cursor
+    </div> -->
 
 
 
@@ -1149,5 +1199,83 @@
     // Call handleCheckboxChange() when the dashboard loads
     handleCheckboxChange();
 </script>
+    
+<script>
+    const cursorTag = document.querySelector("div.cursors")
+    const balls = cursorTag.querySelectorAll("div")
+
+    let aimX = 0
+    let aimY = 0
+
+    balls.forEach((ball, index) => {
+        let currentX = 0
+        let currentY = 0
+        
+        let speed = 0.2 - index * 0.01
+
+        const animate = function () {
+            currentX += (aimX - currentX) * speed
+            currentY += (aimY - currentY) * speed
+
+            ball.style.left = currentX + "px"
+            ball.style.top = currentY + "px"
+
+            requestAnimationFrame(animate)
+        }
+
+        animate()
+    })
+
+    document.addEventListener("mousemove", function (event) {
+        aimX = event.pageX
+        aimY = event.pageY
+     })
+</script>
+
+<!-- <script>
+let cursorPosition = { x: 0, y: 0 };
+let isCursorMoving = false;
+let cursorMoveTimeout;
+let circles = [];
+let circleRemovalInterval;
+
+const cursor = document.getElementById("main");
+
+document.addEventListener("mousemove", (e) => {
+    cursorPosition.x = e.clientX;
+    cursorPosition.y = e.clientY;
+    cursor.style.left = e.clientX - cursor.offsetWidth / 2 + "px";
+    cursor.style.top = e.clientY - cursor.offsetHeight / 2 + "px";
+
+    isCursorMoving = true;
+    clearTimeout(cursorMoveTimeout);
+
+    cursorMoveTimeout = setTimeout(() => {
+        isCursorMoving = false;
+        circleRemovalInterval = setInterval(() => {
+            if (circles.length > 0) {
+                let circle = circles.shift();
+                circle.remove();
+            } else {
+                clearInterval(circleRemovalInterval);
+            }
+        }, 5)
+    }, 500)
+})
+
+setInterval(() => {
+    if (isCursorMoving) {
+        const circle = document.createElement("div");
+        circle.classList.add("circle");
+        document.body.appendChild(circle)
+
+        circle.style.left = cursorPosition.x - circle.offsetWidth / 2 + "px";
+        circle.style.top = cursorPosition.y - circle.offsetHeight / 2 + "px";
+
+        circles.push(circle)
+    }
+}, 100)
+</script> -->
+
 </body>
 </html>
