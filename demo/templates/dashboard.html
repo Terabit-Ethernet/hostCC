@@ -23,8 +23,17 @@
             margin: 5px;
         }
 
+        .header {
+            background-color: #c6c5dc;
+            /* display: grid; */
+            /* grid-template-columns: repeat(2, 1fr); */
+            /* grid-gap: 20px; */
+            margin-left: 0px;
+            margin-right: 10px;
+        }
+
         .dashboard-title {
-            font-size: 26px;
+            font-size: 24px;
             margin: 0;
             text-align: center;
             padding: 10px;
@@ -61,8 +70,8 @@
             /* grid-gap: 0px; */
 
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 2 columns with equal width */
-            grid-template-rows: 264px 264px;    /* 2 rows with equal height */
+            grid-template-columns: repeat(1, 1fr); /* 2 columns with equal width */
+            grid-template-rows: 204px 204px 204px;    /* 2 rows with equal height */
             grid-gap: 0px;
         }
 
@@ -84,7 +93,7 @@
             justify-content: center; /* Center-align content horizontally */
             padding: 5px;
             margin-top: 10px;
-            height: 240px;
+            height: 200px;
             width: auto;
         }
 
@@ -227,6 +236,20 @@
             background-color: #b96c13;
         }
 
+        droplaunchbutton {
+            padding: 10px 10px;
+            background-color: white;
+            color: black;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+            margin-top: 10px; /* Adjust this value as needed */
+            margin-bottom: 0px; /* Adjust this value as needed */
+        }
+        droplaunchbutton:hover {
+            background-color: #9ea6af;
+        }
+
 
         unloadbutton {
             padding: 10px 20px;
@@ -269,6 +292,16 @@
             cursor: pointer;
             margin-right: 10px; /* Adjust this value as needed */
             width: 70px; /* Set a fixed width for all buttons */
+            text-align: center; /* Center-align the text within the button */
+        }
+
+        droplaunchbutton {
+            padding: 5px 0px;
+            color: black;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px; /* Adjust this value as needed */
+            width: 70px; 
             text-align: center; /* Center-align the text within the button */
         }
 
@@ -329,17 +362,56 @@
         #slider3 {
             width: 90px; /* Adjust the width as needed */
         }
+
+    /* Style for the dropdown container */
+    .dropdown {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 1;
+    }
+
+    /* Style for the dropdown button with increased width and centered label */
+    .dropdown-button {
+        background-color: #3498db;
+        color: white;
+        padding: 10px 20px; /* Increase the width by modifying the padding */
+        border: none;
+        cursor: pointer;
+    }
+
+    /* Style for the dropdown content */
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        top: 100%; /* Position below the button */
+        right: 0; /* Align with the right edge of the button */
+        background-color: #f9f9f9;
+        min-width: 150px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    /* Style for the checkbox labels (right-aligned) */
+    .checkbox-label {
+        display: block;
+        margin-bottom: 5px;
+        text-align: left; /* Right-align the text */
+    }
+
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
     <div class="dashboard">
-        <div class="header">
-            <h4 class="dashboard-title">Host Congestion Control Demonstration</h4>
-        </div>
+        
         <div class="column left">
+            <div class="header">
+                <h5 class="dashboard-title">Host Congestion Demo</h5>
+            </div>
             <div class="netapp-section">
-                <h3 class="section-title"> Throughput Sensitive <br> Network Application </h3>
+                <h3 class="section-title"> Throughput Sensitive Network App </h3>
                 <div class="slider-container">
                     <label for="slider3" class="slider-label">Num Cores</label>
                     <input type="range" id="slider3" min="1" max="6" value="4">
@@ -413,13 +485,23 @@
             <div class="image-container"> 
                 <img id="dynamic-image" src="/static/no-hostcc.jpg" alt="Dynamic Image" class="fit-to-column">
             </div>
-            <div class="plot-grid">
+            <div class="dropdown">
+                <droplaunchbutton onclick="toggleDropdown()">Metrics</droplaunchbutton>
+                <div class="dropdown-content" id="checkbox-list">
+                    <label class="checkbox-label"><input type="checkbox" value="pcie" checked onchange="handleCheckboxChange()"> Throughput </label>
+                    <label class="checkbox-label"><input type="checkbox" value="latencies" checked onchange="handleCheckboxChange()"> Latency </label>
+                    <label class="checkbox-label"><input type="checkbox" value="drop-rates" checked onchange="handleCheckboxChange()"> Drop Rate </label>
+                    <label class="checkbox-label"><input type="checkbox" value="iio-occ" onchange="handleCheckboxChange()"> IIO Occupancy </label>
+                </div>
+            </div>
+            <!-- <div class="plot-grid">
                 <div class="plot" id="pcie-plot"></div>
                 <div class="plot" id="latencies-plot"></div>
                 <div class="plot" id="drop-rates-plot"></div>
-                <!-- <div class="plot" id="membw-plot"></div> -->
                 <div class="plot" id="iio-occ-plot"></div>
-                <!-- <div class="plot" id="cpu-plot"></div> -->
+            </div> -->
+            <div class="plot-grid" id="custom-plot-grid">
+                <!-- This is where the dynamically generated content will go -->
             </div>
         </div>
     </div>
@@ -1023,6 +1105,49 @@
     // Call the function with the desired N value
     updateIIOOccPlot(200);  // Change this to your desired N value
     setInterval(() => updateIIOOccPlot(200), 1000);  // Change N value here as well
+</script>
+
+<script>
+    function handleCheckboxChange() {
+        // const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        // checkboxes.forEach(checkbox => {
+        //     const checkboxValue = checkbox.value;
+        //     const plot = document.getElementById(checkboxValue + "-plot");
+
+        //     if (checkbox.checked) {
+        //         plot.style.display = "block"; // Show the corresponding plot
+        //     } else {
+        //         plot.style.display = "none"; // Hide the corresponding plot
+        //     }
+        // });
+
+        const checkboxes = document.querySelectorAll('.checkbox-label input[type="checkbox"]');
+        const customPlotGrid = document.getElementById("custom-plot-grid");
+        customPlotGrid.innerHTML = ''; // Clear the existing content
+
+        checkboxes.forEach(checkbox => {
+            const checkboxValue = checkbox.value;
+
+            if (checkbox.checked) {
+                const plotHTML = `<div class="plot" id="${checkboxValue}-plot"></div>`;
+                customPlotGrid.innerHTML += plotHTML; // Append the plot HTML
+            }
+        });
+    }
+
+    // Toggle the display of the dropdown content
+    function toggleDropdown() {
+        var dropdown = document.getElementById("checkbox-list");
+        if (dropdown.style.display === "block") {
+            dropdown.style.display = "none";
+        } else {
+            dropdown.style.display = "block";
+            // handleCheckboxChange();
+        }
+    }
+
+    // Call handleCheckboxChange() when the dashboard loads
+    handleCheckboxChange();
 </script>
 </body>
 </html>
