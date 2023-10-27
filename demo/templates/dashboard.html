@@ -887,6 +887,7 @@
                         fillcolor: 'rgba(0, 100, 80, 0.9)',  // Specify the fill color
                         line: { color: 'rgb(0, 100, 80)', width: 4 },  // Line color
                         type: 'scatter',
+                        hoverinfo: 'skip'
                     };
                     var layout = {
                         font: {
@@ -925,7 +926,8 @@
                     fill: 'tozeroy',  // Fill the area below the line with color
                     fillcolor: 'rgba(0, 150, 30, 0.9)',  // Specify the fill color
                     line: { color: 'rgb(0, 100, 80)', width: 4 },  // Line color
-                    type: 'scatter'
+                    type: 'scatter',
+                    hoverinfo: 'skip'
                 };
                 var layout = {
                     font: {
@@ -965,7 +967,8 @@
                     fill: 'tozeroy',  // Fill the area below the line with color
                     fillcolor: 'rgba(60, 150, 170, 0.9)',  // Specify the fill color
                     line: { color: 'rgb(50, 50, 170)', width: 4 },  // Line color
-                    type: 'scatter'
+                    type: 'scatter',
+                    hoverinfo: 'skip'
                 };
                 var layout = {
                     font: {
@@ -1004,7 +1007,8 @@
                     fill: 'tozeroy',  // Fill the area below the line with color
                     fillcolor: 'rgba(255, 71, 76, 0.9)',  // Specify the fill color
                     line: { color: 'rgb(100, 20, 20)', width: 4 },  // Line color
-                    type: 'scatter'
+                    type: 'scatter',
+                    hoverinfo: 'skip'
                 };
                 var layout = {
                     font: {
@@ -1047,7 +1051,8 @@
                     fillcolor: 'rgba(0, 210, 0, 0.9)', // Lighter shade of green (adjust alpha value)
                     line: { color: lineColors[2], width: 4 },
                     type: 'scatter',
-                    name: 'P99.99 Latency'
+                    name: 'P99.99 Latency',
+                    hoverinfo: 'skip'
                 };
 
                var trace2 = {
@@ -1057,7 +1062,8 @@
                     fillcolor: 'rgba(0, 140, 0, 0.9)', // Lighter shade of green (adjust alpha value)
                     line: { color: lineColors[1], width: 4 },
                     type: 'scatter',
-                    name: 'P99.9 Latency'
+                    name: 'P99.9 Latency',
+                    hoverinfo: 'skip'
                 };
 
                 var trace1 = {
@@ -1067,7 +1073,8 @@
                     fillcolor: 'rgba(0, 70, 0, 0.9)', // Lighter shade of green (adjust alpha value)
                     line: { color: lineColors[0], width: 4 },
                     type: 'scatter',
-                    name: 'P99 Latency'
+                    name: 'P99 Latency',
+                    hoverinfo: 'skip'
                 };
 
 
@@ -1131,7 +1138,8 @@
                     fill: 'tozeroy',  // Fill the area below the line with color
                     fillcolor: 'rgba(249, 170, 50, 0.9)',  // Specify the fill color
                     line: { color: 'rgb(249, 115, 6)', width: 4 },  // Line color
-                    type: 'scatter'
+                    type: 'scatter',
+                    hoverinfo: 'skip'
                 };
                 var layout = {
                     font: {
@@ -1142,7 +1150,7 @@
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'IIO Occupancy <br> (99.9p over 1s interval)', range: [50, 100], tickvals: [50, 60, 70, 80, 90, 100]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    yaxis: { title: 'IIO Occupancy <br> (99.9p over 1s interval)', range: [40, 100], tickvals: [40, 60, 80, 100]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
                     margin: {
                         t: 60, // Adjust this value to reduce the gap
                         b: 60,
