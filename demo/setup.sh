@@ -1,3 +1,6 @@
+cd ../utils
+sudo bash set_mba_levels.sh
+cd -
 mkdir -p logs
 sudo modprobe msr
 sudo pkill -9 -f pcm

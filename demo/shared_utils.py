@@ -1,0 +1,1 @@
+lat_app_req_size = 128

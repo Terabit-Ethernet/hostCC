@@ -136,6 +136,18 @@ def unload_hostcc():
     except Exception as e:
         return jsonify({'message': 'Error executing script', 'error': str(e)})
 
+@app.route('/update-hostcc-targetbw', methods=['POST'])
+def update_hostcc_targetbw():
+    try:
+        data = request.get_json()
+        print(data)
+        slider_value = data['slider']
+        # Replace 'your_script.sh' with the actual path to your Bash script
+        subprocess.run(['bash', 'update-hostcc-targetbw.sh',str(int(float(slider_value) * 1.05))])
+        return jsonify({'message': 'Script executed successfully'})
+    except Exception as e:
+        return jsonify({'message': 'Error executing script', 'error': str(e)})
+
 @app.route('/get_last_n_cpu_data/<int:n>')
 def get_last_n_cpu_data(n):
     data_entries = CpuData.query.order_by(CpuData.timestamp.desc()).limit(n).all()

@@ -11,7 +11,8 @@
             font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f2f2f2;
+            /* background-color: #badaff; */
+            background-color: white;
         }
 
         .dashboard {
@@ -52,10 +53,16 @@
         }
 
         .plot-grid {
-            display: grid;
+            /* display: grid; */
             /* grid-template-columns: repeat(auto-fit, minmax(calc(50% - 10px), 1fr)); */
-            grid-template-columns: repeat(auto-fit, minmax(calc(100% - 10px), 1fr));
+            /* grid-template-columns: repeat(auto-fit, minmax(calc(100% - 10px), 1fr)); */
+            /* grid-template-columns: repeat(2, 1fr); */
             /* grid-gap: 5px; */
+            /* grid-gap: 0px; */
+
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 columns with equal width */
+            grid-template-rows: 264px 264px;    /* 2 rows with equal height */
             grid-gap: 0px;
         }
 
@@ -77,6 +84,8 @@
             justify-content: center; /* Center-align content horizontally */
             padding: 5px;
             margin-top: 10px;
+            height: 240px;
+            width: auto;
         }
 
         .fit-to-column {
@@ -187,6 +196,8 @@
             border: none;
             cursor: pointer;
             margin-right: 10px; /* Adjust this value as needed */
+            margin-top: 5px; /* Adjust this value as needed */
+            margin-bottom: 0px; /* Adjust this value as needed */
         }
 
         killbutton {
@@ -195,6 +206,7 @@
             color: #ffffff;
             border: none;
             cursor: pointer;
+            margin-top: 10px; /* Adjust this value as needed */
             margin-right: 10px; /* Adjust this value as needed */
         }
         killbutton:hover {
@@ -209,7 +221,7 @@
             cursor: pointer;
             margin-right: 10px; /* Adjust this value as needed */
             margin-top: 10px; /* Adjust this value as needed */
-            margin-bottom: 10px; /* Adjust this value as needed */
+            margin-bottom: 0px; /* Adjust this value as needed */
         }
         launchbutton:hover {
             background-color: #b96c13;
@@ -236,7 +248,7 @@
             cursor: pointer;
             margin-right: 10px; /* Adjust this value as needed */
             margin-top: 10px; /* Adjust this value as needed */
-            margin-bottom: 10px; /* Adjust this value as needed */
+            margin-bottom: 0px; /* Adjust this value as needed */
         }
         loadbutton:hover {
             background-color: #0b8813;
@@ -262,7 +274,7 @@
 
         .column {
         float: left;
-        width: 50%;
+        width: 30%;
         }
 
         /* Clear floats after the columns */
@@ -275,7 +287,7 @@
         }
 
         .right {
-        width: 77%;
+        width: 79%;
         }
 
         .checkboxes {
@@ -299,6 +311,24 @@
             display: flex; /* Use flexbox to align items horizontally */
             align-items: center; /* Center-align items horizontally */
         }
+
+        .button-container {
+            float: right; /* Float the button container to the right */
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically */
+            margin-left: 10px; /* Adjust the margin as needed */
+            margin-bottom: 0px; /* Adjust the margin as needed */
+        }
+
+        #slider2 {
+            width: 90px; /* Adjust the width as needed */
+        }
+        #slider {
+            width: 90px; /* Adjust the width as needed */
+        }
+        #slider3 {
+            width: 90px; /* Adjust the width as needed */
+        }
     </style>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
@@ -311,9 +341,13 @@
             <div class="netapp-section">
                 <h3 class="section-title"> Throughput Sensitive <br> Network Application </h3>
                 <div class="slider-container">
-                    <label for="slider3" class="slider-label">Number of cores:</label>
+                    <label for="slider3" class="slider-label">Num Cores</label>
                     <input type="range" id="slider3" min="1" max="6" value="4">
                     <span id="slider3-value" class="slider3-value">4</span>
+                    <div class="button-container">
+                        <button id="plus-button3">+</button>
+                        <button id="minus-button3">-</button>
+                    </div>
                 </div>
                 <div class="slider-container"> 
                 <launchbutton id="button5">Launch</launchbutton>
@@ -334,9 +368,13 @@
             <div class="mapp-section">
                 <h3 class="section-title"> Host-Local Application </h3>
                 <div class="slider-container">
-                    <label for="slider" class="slider-label">Number of cores:</label>
+                    <label for="slider" class="slider-label">Num Cores</label>
                     <input type="range" id="slider" min="1" max="3" value="3">
                     <span id="slider-value" class="slider-value">3</span>
+                    <div class="button-container">
+                        <button id="plus-button">+</button>
+                        <button id="minus-button">-</button>
+                    </div>
                 </div>
                 <div class="slider-container">
                 <launchbutton id="button1">Launch</launchbutton>
@@ -347,17 +385,21 @@
                 <h3 class="section-title"> hostCC controls </h3>
                 <div class="checkboxes">
                     <label class="centered-label">
-                        <input type="checkbox" id="host-local-checkbox"> Host-local congestion response
+                        <input type="checkbox" id="host-local-checkbox" checked> Host-local congestion response
                     </label>
                     <br>
                     <label class="centered-label">
-                        <input type="checkbox" id="network-checkbox"> Network congestion response using host congestion signals
+                        <input type="checkbox" id="network-checkbox" checked> Network congestion response using host congestion signals
                     </label>
                 </div>
                 <div class="slider-container">
-                    <label for="slider2" class="slider-label">Target Network Bandwidth (Gbps):</label>
+                    <label for="slider2" class="slider-label">Target Network Bandwidth (Gbps)</label>
                     <input type="range" id="slider2" min="10" max="90" step="5" value="80">
                     <span id="slider2-value" class="slider2-value">80</span>
+                    <div class="button-container">
+                        <button id="plus-button2">+</button>
+                        <button id="minus-button2">-</button>
+                    </div>
                 </div>
                 <div class="slider-container">
                 <!-- <loadbutton id="button3">Load hostCC</loadbutton> -->
@@ -368,15 +410,15 @@
             </div>
         </div>
         <div class="column right">
-            <!-- <div class="image-container"> 
-                <img id="dynamic-image" src="/static/no-traffic.jpeg" alt="Dynamic Image" class="fit-to-column">
-            </div> -->
+            <div class="image-container"> 
+                <img id="dynamic-image" src="/static/no-hostcc.jpg" alt="Dynamic Image" class="fit-to-column">
+            </div>
             <div class="plot-grid">
-                <div class="plot plot-container" id="pcie-plot"></div>
+                <div class="plot" id="pcie-plot"></div>
                 <div class="plot" id="latencies-plot"></div>
                 <div class="plot" id="drop-rates-plot"></div>
-                <div class="plot" id="membw-plot"></div>
-                <!-- <div class="plot" id="iio-occ-plot"></div> -->
+                <!-- <div class="plot" id="membw-plot"></div> -->
+                <div class="plot" id="iio-occ-plot"></div>
                 <!-- <div class="plot" id="cpu-plot"></div> -->
             </div>
         </div>
@@ -406,17 +448,103 @@
                 sliderValue.textContent = slider.value;
             });
 
+            var plusButton = document.getElementById("plus-button");
+            var minusButton = document.getElementById("minus-button");
+
+            // Function to increase the slider value
+            plusButton.addEventListener("click", function () {
+                if (slider.value < slider.max) {
+                    slider.value = parseInt(slider.value) + 1;
+                    updateSliderValue(); // Update the displayed value
+                }
+            });
+
+            // Function to decrease the slider value
+            minusButton.addEventListener("click", function () {
+                if (slider.value > slider.min) {
+                    slider.value = parseInt(slider.value) - 1;
+                    updateSliderValue(); // Update the displayed value
+                }
+            });
+
+            // Function to update the displayed value
+            function updateSliderValue() {
+                var sliderValue = document.getElementById("slider-value");
+                sliderValue.textContent = slider.value;
+            }
+
+            // Call the updateSliderValue function to initialize the displayed value
+            updateSliderValue();
+
             const slider2 = document.getElementById('slider2');
             const slider2Value = document.getElementById('slider2-value');
             slider2.addEventListener('input', function () {
                 slider2Value.textContent = slider2.value;
+                updateHostCCTargetBWScript('update-hostcc-targetbw',slider2.value)
             });
+
+            var plusButton2 = document.getElementById("plus-button2");
+            var minusButton2 = document.getElementById("minus-button2");
+
+            // Function to increase slider2 value
+            plusButton2.addEventListener("click", function () {
+                if (parseInt(slider2.value) < parseInt(slider2.max)) {
+                    slider2.value = String(parseInt(slider2.value) + parseInt(slider2.step));
+                    updateSlider2Value();
+                }
+            });
+
+            // Function to decrease slider2 value
+            minusButton2.addEventListener("click", function () {
+                if (parseInt(slider2.value) > parseInt(slider2.min)) {
+                    slider2.value = String(parseInt(slider2.value) - parseInt(slider2.step));
+                    updateSlider2Value();
+                }
+            });
+
+            // Function to update displayed value for slider2
+            function updateSlider2Value() {
+                var slider2Value = document.getElementById("slider2-value");
+                slider2Value.textContent = slider2.value;
+                updateHostCCTargetBWScript('update-hostcc-targetbw',slider2.value)
+            }
+
+            // Call the updateSlider2Value function to initialize the displayed value
+            updateSlider2Value();
 
             const slider3 = document.getElementById('slider3');
             const slider3Value = document.getElementById('slider3-value');
             slider3.addEventListener('input', function () {
                 slider3Value.textContent = slider3.value;
             });
+
+            var plusButton3 = document.getElementById("plus-button3");
+            var minusButton3 = document.getElementById("minus-button3");
+
+            // Function to increase the slider value
+            plusButton3.addEventListener("click", function () {
+                if (slider3.value < slider3.max) {
+                    slider3.value = parseInt(slider3.value) + 1;
+                    updateSlider3Value(); // Update the displayed value
+                }
+            });
+
+            // Function to decrease the slider value
+            minusButton3.addEventListener("click", function () {
+                if (slider3.value > slider3.min) {
+                    slider3.value = parseInt(slider3.value) - 1;
+                    updateSlider3Value(); // Update the displayed value
+                }
+            });
+
+            // Function to update the displayed value
+            function updateSlider3Value() {
+                var slider3Value = document.getElementById("slider3-value");
+                slider3Value.textContent = slider3.value;
+            }
+
+            // Call the updateSliderValue function to initialize the displayed value
+            updateSlider3Value();
 
             const textbox = document.getElementById('core-count');
 
@@ -427,26 +555,26 @@
                 const sliderVal = slider.value;
                 const imageElement = document.getElementById('dynamic-image');
                 launchMlcScript('launch-mlc',sliderVal);
-                imageElement.src = '/static/host-congestion-classical-cc.jpeg';
+                imageElement.src = '/static/no-hostcc.jpg';
             });
             
             document.getElementById('button2').addEventListener('click', function () {
                 const imageElement = document.getElementById('dynamic-image');
                 killMlcScript('kill-mlc');
-                imageElement.src = '/static/no-host-congestion.jpeg';
+                imageElement.src = '/static/no-hostcc.jpg';
             });
 
             document.getElementById('button5').addEventListener('click', function () {
                 const slider3Val = slider3.value;
                 const imageElement = document.getElementById('dynamic-image');
                 launchIperfScript('launch-iperf',slider3Val);
-                imageElement.src = '/static/no-host-congestion.jpeg';
+                imageElement.src = '/static/no-hostcc.jpg';
             });
             
             document.getElementById('button6').addEventListener('click', function () {
                 const imageElement = document.getElementById('dynamic-image');
                 killIperfScript('kill-iperf');
-                imageElement.src = '/static/no-traffic.jpeg';
+                imageElement.src = '/staticno-hostcc.jpg';
             });
 
             document.getElementById('button7').addEventListener('click', function () {
@@ -465,23 +593,23 @@
                 const networkCheckboxVal = networkCheckbox.checked; // true if checked, false if not checked
                 loadHostCCScript('load-hostcc',slider2Val,hostLocalCheckboxVal,networkCheckboxVal);
                 if (hostLocalCheckboxVal && networkCheckboxVal){
-                    imageElement.src = '/static/hostcc-network-local.jpeg';
+                    imageElement.src = '/static/hostcc.jpg';
                 }
                 else if(hostLocalCheckboxVal){
-                    imageElement.src = '/static/hostcc-local.jpeg';
+                    imageElement.src = '/static/hostcc-local.jpg';
                 }
                 else if(networkCheckboxVal){
-                    imageElement.src = '/static/hostcc-network.jpeg';
+                    imageElement.src = '/static/hostcc-network.jpg';
                 }
                 else{
-                    imageElement.src = '/static/host-congestion-classical-cc.jpeg';
+                    imageElement.src = '/static/no-hostcc.jpg';
                 }
             });
             
             document.getElementById('button4').addEventListener('click', function () {
                 const imageElement = document.getElementById('dynamic-image');
                 unloadHostCCScript('unload-hostcc');
-                imageElement.src = '/static/host-congestion-classical-cc.jpeg';
+                imageElement.src = '/static/no-hostcc.jpg';
             });
         });
     
@@ -596,6 +724,20 @@
                 console.log(data.message);
             });
         }
+
+        function updateHostCCTargetBWScript(scriptName, sliderVal) {
+            fetch('/update-hostcc-targetbw', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ script: scriptName, slider: sliderVal })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+            });
+        }
     </script>
 
 
@@ -662,7 +804,7 @@
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'Network Throughput', range: [0, 100], tickvals: [0, 20, 40, 60, 80, 100]}, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)', 
+                    yaxis: { title: 'Throughput (Gbps)', range: [0, 100], tickvals: [0, 20, 40, 60, 80, 100]}, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)', 
                     // height: '10%',
                     margin: {
                         t: 60, // Adjust this value to reduce the gap
@@ -741,7 +883,8 @@
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'Drop Rate (%)', type: 'log', autorange: false, range: [-5, 1]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    // yaxis: { title: 'Drop Rate (%)', type: 'log', autorange: false, range: [-5, 1]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    yaxis: { title: 'Drop Rate (%)', range: [0, 0.5]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
                     margin: {
                         t: 60, // Adjust this value to reduce the gap
                         b: 60,
@@ -808,7 +951,7 @@
                     font: {
                         family: 'Roboto, sans-serif' // Replace 'YourFontFamily' with the desired font name
                     },
-                    title: `Latency (us) vs Time`,
+                    title: `Tail Latency (us) vs Time`,
                     xaxis: { title: 'Time (HH:MM:SS)',
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
@@ -820,7 +963,7 @@
                         b: 60,
                     },
                     legend: {
-                        x: 0.2,  // Adjust the x position (centered)
+                        x: 0.5,  // Adjust the x position (centered)
                         y: 1.0,  // Adjust the y position (above the plot)
                         traceorder: "reversed", // Display legend items in the specified order
                         // bordercolor: 'black', // Add a border around the legend
@@ -867,7 +1010,7 @@
                         range: [new Date() - 120000, new Date()], // Set fixed 60-second range
                         type: 'date' // Specify the x-axis type as date 
                     },
-                    yaxis: { title: 'IIO Occupancy \n (99.9p over 1s interval)', range: [0, 100]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
+                    yaxis: { title: 'IIO Occupancy <br> (99.9p over 1s interval)', range: [50, 100], tickvals: [50, 60, 70, 80, 90, 100]  }, plot_bgcolor: 'rgb(230, 230, 232)',paper_bgcolor: 'rgb(208, 208, 232)',
                     margin: {
                         t: 60, // Adjust this value to reduce the gap
                         b: 60,
