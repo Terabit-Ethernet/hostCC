@@ -525,6 +525,8 @@
                 <img id="dynamic-image" src="/static/no-hostcc.jpg" alt="Dynamic Image" class="fit-to-column">
             </div>
             <div class="dropdown">
+                <input type="checkbox" id="mouseTrailToggle">
+                <label for="mouseTrailToggle">Pointer</label>
                 <droplaunchbutton onclick="toggleDropdown()">Metrics</droplaunchbutton>
                 <div class="dropdown-content" id="checkbox-list">
                     <label class="checkbox-label"><input type="checkbox" value="pcie" checked onchange="handleCheckboxChange()"> Throughput </label>
@@ -1214,6 +1216,7 @@
 
     let aimX = 0
     let aimY = 0
+    let mouseTrailEnabled = false; // Initially, it's disabled
 
     balls.forEach((ball, index) => {
         let currentX = 0
@@ -1225,8 +1228,14 @@
             currentX += (aimX - currentX) * speed
             currentY += (aimY - currentY) * speed
 
-            ball.style.left = currentX + "px"
-            ball.style.top = currentY + "px"
+            if (mouseTrailEnabled) {
+                ball.style.display = "block";
+                ball.style.left = currentX + "px"
+                ball.style.top = currentY + "px"
+            }
+            else{
+                ball.style.display = "none";
+            }
 
             requestAnimationFrame(animate)
         }
@@ -1238,6 +1247,13 @@
         aimX = event.pageX
         aimY = event.pageY
      })
+
+    const toggleButton = document.getElementById("mouseTrailToggle");
+
+    toggleButton.addEventListener("change", function () {
+            // When the toggle button state changes, enable or disable the mouse trail
+        mouseTrailEnabled = toggleButton.checked;
+        });
 </script>
 
 <!-- <script>
