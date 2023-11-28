@@ -66,6 +66,7 @@ mlc_dir=$home/mlc/Linux
 #read -s password
 uname=benny
 addr=192.168.11.117
+ssh_hostname=genie04.cs.cornell.edu
 password=benny
 
 
@@ -168,10 +169,10 @@ function cleanup() {
     sudo pkill -9 -f iperf
     rm -f $home/hostCC/utils/out.perf-folded
     rm -f $home/hostCC/utils/perf.data
-    sshpass -p $password ssh $uname@$addr 'screen -S $(screen -list | awk "/\\.client_session\t/ {print \$1}") -X quit'
-    sshpass -p $password ssh $uname@$addr 'screen -S $(screen -list | awk "/\\.logging_session\t/ {print \$1}") -X quit'
-    sshpass -p $password ssh $uname@$addr 'screen -wipe'
-    sshpass -p $password ssh $uname@$addr 'sudo pkill -9 -f iperf'
+    sshpass -p $password ssh $uname@$ssh_hostname 'screen -S $(screen -list | awk "/\\.client_session\t/ {print \$1}") -X quit'
+    sshpass -p $password ssh $uname@$ssh_hostname 'screen -S $(screen -list | awk "/\\.logging_session\t/ {print \$1}") -X quit'
+    sshpass -p $password ssh $uname@$ssh_hostname 'screen -wipe'
+    sshpass -p $password ssh $uname@$ssh_hostname 'sudo pkill -9 -f iperf'
 }
 
 
@@ -208,7 +209,7 @@ cd -
 
 #### setup and start clients
 echo "setting up and starting clients..."
-sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' --ring_buffer '$ring_buffer' --buf '$buf' -f 1 -r 0 -p 0 -e 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-RUN-'$j' -p '$init_port' -c '$cpu_mask' -b '$bandwidth'; exec bash"'
+sshpass -p $password ssh $uname@$ssh_hostname 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' --ring_buffer '$ring_buffer' --buf '$buf' -f 1 -r 0 -p 0 -e 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-RUN-'$j' -p '$init_port' -c '$cpu_mask' -b '$bandwidth'; exec bash"'
 
 
 #### warmup
@@ -218,7 +219,7 @@ progress_bar 10 1
 #record stats
 ##start sender side logging
 echo "starting logging at client..."
-sshpass -p $password ssh $uname@$addr 'screen -dmS logging_session sudo bash -c "cd '$setup_dir'; sudo bash record-host-metrics.sh -f 1 -t 1 -i '$client_intf' -o '$exp-RUN-$j' --type 0 --cpu_util 1 --retx 1 --pcie 0 --membw 0 --dur '$dur' --cores '$cpu_mask' ; exec bash"'
+sshpass -p $password ssh $uname@$ssh_hostname 'screen -dmS logging_session sudo bash -c "cd '$setup_dir'; sudo bash record-host-metrics.sh -f 1 -t 1 -i '$client_intf' -o '$exp-RUN-$j' --type 0 --cpu_util 1 --retx 1 --pcie 0 --membw 0 --dur '$dur' --cores '$cpu_mask' ; exec bash"'
 
 ##start receiver side logging
 echo "starting logging at server..."
@@ -228,7 +229,7 @@ echo "done logging..."
 cd -
 
 #transfer sender-side info back to receiver
-sshpass -p $password scp $uname@$addr:$setup_dir/reports/$exp-RUN-$j/retx.rpt $setup_dir/reports/$exp-RUN-$j/retx.rpt
+sshpass -p $password scp $uname@$ssh_hostname:$setup_dir/reports/$exp-RUN-$j/retx.rpt $setup_dir/reports/$exp-RUN-$j/retx.rpt
 
 sleep $(($dur * 2))
 
@@ -260,7 +261,7 @@ else
 
     #### setup and start clients
     echo "setting up and starting clients..."
-    sshpass -p $password ssh $uname@$addr 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' --ring_buffer '$ring_buffer' --buf '$buf' -f 1 -r 0 -p 0 -e 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-MLCRUN-'$j' -p '$init_port' -c '$cpu_mask' -b '$bandwidth'; exec bash"'
+    sshpass -p $password ssh $uname@$ssh_hostname 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' --ring_buffer '$ring_buffer' --buf '$buf' -f 1 -r 0 -p 0 -e 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-MLCRUN-'$j' -p '$init_port' -c '$cpu_mask' -b '$bandwidth'; exec bash"'
 
     #### start MLC
     echo "starting MLC..."
