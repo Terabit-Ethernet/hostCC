@@ -45,14 +45,14 @@ num_clients=4
 init_port=3000
 ddio=0
 mtu=4000
-dur=25
+dur=10
 cpu_mask="4,8,12,16"
 mlc_cores="none"
 mlc_dur=100
 ring_buffer=1024
 buf=1
 bandwidth="100g"
-num_runs=1
+num_runs=5
 home="/home/benny"
 setup_dir=$home/hostCC/utils
 exp_dir=$home/hostCC/utils/tcp
@@ -173,6 +173,10 @@ function cleanup() {
     sshpass -p $password ssh $uname@$ssh_hostname 'screen -S $(screen -list | awk "/\\.logging_session\t/ {print \$1}") -X quit'
     sshpass -p $password ssh $uname@$ssh_hostname 'screen -wipe'
     sshpass -p $password ssh $uname@$ssh_hostname 'sudo pkill -9 -f iperf'
+    ## IOVA logging
+    sudo echo 0 > /sys/kernel/debug/tracing/tracing_on
+    sudo echo 0 > /sys/kernel/debug/tracing/options/overwrite
+    sudo echo 5000 > /sys/kernel/debug/tracing/buffer_size_kb
 }
 
 
@@ -207,10 +211,13 @@ sudo bash run-netapp-tput.sh -m server -S $num_servers -o $exp-RUN-$j -p $init_p
 sleep 2
 cd -
 
+echo "turning on IOVA logging via ftrace"
+sudo echo > /sys/kernel/debug/tracing/trace
+sudo echo 1 > /sys/kernel/debug/tracing/tracing_on
+
 #### setup and start clients
 echo "setting up and starting clients..."
 sshpass -p $password ssh $uname@$ssh_hostname 'screen -dmS client_session sudo bash -c "cd '$setup_dir'; sudo bash setup-envir.sh -i '$client_intf' -a '$client' -m '$mtu' -d '$ddio' --ring_buffer '$ring_buffer' --buf '$buf' -f 1 -r 0 -p 0 -e 1 -o 1; cd '$exp_dir'; sudo bash run-netapp-tput.sh -m client -a '$server' -C '$num_clients' -S '$num_servers' -o '$exp'-RUN-'$j' -p '$init_port' -c '$cpu_mask' -b '$bandwidth'; exec bash"'
-
 
 #### warmup
 echo "warming up..."
