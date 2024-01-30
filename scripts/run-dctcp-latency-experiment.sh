@@ -34,36 +34,38 @@ eval set -- "$OPTS"
 
 #default values
 exp="dctcp-lat-test"
-server="192.168.10.122"
-client="192.168.10.121"
-server_intf="ens2f1"
-client_intf="ens2f0"
-num_servers=4
-num_clients=4
+server="192.168.11.116"
+client="192.168.11.117"
+server_intf="ens2f1np1"
+client_intf="ens2f1"
+num_servers=5
+num_clients=5
 init_port=3000
 ddio=0
 mtu=4000
-dur=30
-cpu_mask="4,8,12,16"
+dur=20
+cpu_mask="0,4,8,12,16"
 lat_app_core=20
 lat_app_port=5050
 mlc_cores="none"
 mlc_dur=100
-num_runs=2
-home="/home/saksham"
+ring_buffer=1024
+num_runs=3
+home="/home/benny"
 setup_dir=$home/hostCC/utils
 exp_dir=$home/hostCC/utils/tcp
 mlc_dir=$home/mlc/Linux
 
-echo -n "Enter SSH Username for client:"
-read uname
-echo -n "Enter SSH Address for client:"
-read addr
-echo -n "Enter SSH Password for client:"
-read -s password
-# uname=abc
-# addr=xyz.com
-# password=****
+# echo -n "Enter SSH Username for client:"
+# read uname
+# echo -n "Enter SSH Address for client:"
+# read addr
+# echo -n "Enter SSH Password for client:"
+# read -s password
+uname=benny
+addr=192.168.11.117
+ssh_hostname=genie04.cs.cornell.edu
+password=benny
 
 
 while :
@@ -185,7 +187,7 @@ fi
 #### setup and start servers
 echo "setting up server config..."
 cd $setup_dir
-sudo bash setup-envir.sh -i $server_intf -a $server -m $mtu -d $ddio -f 1 -r 0 -p 0 -e 1 -b 1 -o 1
+sudo bash setup-envir.sh -i $server_intf -a $server -m $mtu -d $ddio --ring_buffer $ring_buffer -f 1 -r 0 -p 0 -e 1 -b 1 -o 1
 cd -
 
 echo "starting server instances..."
